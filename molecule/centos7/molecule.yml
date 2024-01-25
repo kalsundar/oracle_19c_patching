@@ -1,0 +1,45 @@
+---
+
+dependency:
+  name: galaxy
+  options:
+    force: true
+    role-file: roles/requirements.yml
+    roles-path: roles
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+lint:
+  name: yamllint
+  enabled: true
+platforms:
+  - name: tlhashicorpva49
+    box: centos7
+    box_url: https://artifactory2.cscinfo.com/artifactory/api/vagrant/vagrant-local/centos7
+    memory: 2048
+provisioner:
+  name: ansible
+  options:
+    vvv: false
+    vault-password-file: ../../test/.vault_pass
+  connection_options:
+    ansible_become: true
+  lint:
+    name: ansible-lint
+    enabled: true
+scenario:
+  name: centos7
+verifier:
+  name: testinfra
+  options:
+    v: true
+    s: true
+    junit-xml: ../../target/test-reports/testinfra-windows-junit.xml
+    junit-prefix: centos7
+  directory: ../../test/integration/testinfra
+  lint:
+    name: flake8
+    options:
+      ignore: E501
+  enabled: false

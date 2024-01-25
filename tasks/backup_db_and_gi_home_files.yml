@@ -1,0 +1,14 @@
+---
+- name: backup grid infrastructure home
+  become_user: root
+  community.general.archive: 
+    path: "{{ GI_ORACLE_HOME }}"
+    dest: "{{ patch_dir }}/orahomebackup/{{ ansible_hostname }}_{{ current_version }}_gi_{{ lookup('pipe', 'date +%m%d-%H%M') }}.tar.gz"
+    format: gz
+
+- name: backup database home
+  become_user: root
+  community.general.archive: 
+    path: "{{ ORACLE_HOME }}"
+    dest: "{{ patch_dir }}/orahomebackup/{{ ansible_hostname }}_{{ current_version }}_db_{{ lookup('pipe', 'date +%m%d-%H%M') }}.tar.gz"
+    format: gz

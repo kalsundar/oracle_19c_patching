@@ -1,0 +1,63 @@
+---
+- name: verify release update rollback on the database home 1
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db_opatch_lsinv
+  tags:
+    - rollback_verify
+
+- name: display database home opatch lspatches log
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+  tags:
+    - rollback_verify
+
+- name: copy the database home opatch lspatches output to a file
+  copy:
+    content: "{{ db_opatch_lsinv.stdout }}"
+    dest: "{{ rb_log_dir }}/db_opatch_lsinv_1_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_verify
+
+- name: verify release update rollback on the database home 2
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME_2 }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db2_opatch_lsinv
+  tags:
+    - rollback_verify
+
+- name: display database home 2 opatch lspatches log
+  debug:
+    var: db2_opatch_lsinv.stdout_lines
+  tags:
+    - rollback_verify
+
+- name: copy the database home 2 opatch lspatches output to a file
+  copy:
+    content: "{{ db2_opatch_lsinv.stdout }}"
+    dest: "{{ rb_log_dir }}/db_opatch_lsinv_2_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_verify
+
+- name: verify release update rollback on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: gi_opatch_lsinv
+  tags:
+    - rollback_verify
+
+- name: display grid infrastructure opatch lspatches output
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+  tags:
+    - rollback_verify
+
+- name: copy the grid infrastructure opatch lspatches output to a file
+  copy:
+    content: "{{ gi_opatch_lsinv.stdout }}"
+    dest: "{{ rb_log_dir }}/gi_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_verify

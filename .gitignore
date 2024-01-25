@@ -1,0 +1,47 @@
+# Ansible specific
+.ansible
+!roles/requirements.yml
+.retry
+
+# IDE specific
+.idea/
+
+# Bundler
+.bundle
+vendor
+Gemfile.lock
+
+# Ruby
+.ruby-version
+
+# Test-kitchen
+.kitchen/
+.kitchen.local.yml
+
+# Vagrant
+.vagrant
+
+# MacOS junk
+.DS_Store
+
+# Molecule
+.molecule
+molecule/*/tests
+
+# Python
+.cache
+__pycache__
+pytestdebug.log
+
+# ANY logs
+.log
+
+# vscode junk
+.vscode
+
+# target folder for junit reports
+target
+target/*
+
+# Ignore any vault_pass
+.vault_pass

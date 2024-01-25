@@ -1,0 +1,9 @@
+---
+# the below list of tasks will complete patch conflict check, backup current grid and database home
+# verify the service, pdb open mode and database component status
+# - include_tasks: db_home_prerequisites.yml
+# - include_tasks: gi_home_prerequisites.yml
+# - include_tasks: backup_db_and_gi_home_files.yml
+# - include_tasks: list_backup_files.yml
+# - include_tasks: get_db_and_services_status.yml
+- include_tasks: database_component_status.yml

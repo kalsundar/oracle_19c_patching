@@ -1,0 +1,24 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: true
+  become: 'yes'
+  become_user: root
+
+  tasks:
+
+    # needed to get ip address from docker container
+    - name: Install iproute
+      yum:
+        name: iproute
+        state: present
+
+    # needed to get ip address facts from ansible
+    - name: Running fact gathering
+      setup:
+
+    # netstat needed for testinfra socket checks
+    - name: Install net-tools
+      yum:
+        name: net-tools
+        state: present

@@ -1,0 +1,25 @@
+---
+- name: release update post installation on database
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/datapatch.sh"
+  register: datapatch_stat
+  ignore_errors: true
+  tags:
+    - datapatch
+  failed_when: datapatch_stat.rc not in [ 0, 1 ]
+
+- name: display datapatch output
+  debug:
+    var: datapatch_stat.stdout_lines
+  tags:
+    - datapatch
+
+- name: copy the datapatch command output to a log file
+  copy:
+    content: "{{ datapatch_stat.stdout }}"
+    dest: "{{ log_dir }}/datapatch_status_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - datapatch

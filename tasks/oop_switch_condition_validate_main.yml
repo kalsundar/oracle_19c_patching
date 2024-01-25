@@ -1,0 +1,26 @@
+---
+- name: Verify database type to apply or rollback patch
+  ansible.builtin.shell:
+    cmd: cd {{ ORACLE_HOME }}/rdbms/lib;ar -t libknlopt.a | grep -c kcsm.o
+  register: db_type
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+- name: display database type to apply or rollback patch
+  debug:
+    var: db_type.stdout
+
+- name: Verify database release update to apply or rollback patch
+  ansible.builtin.shell:
+    cmd: "{{ ORACLE_HOME }}/bin/oraversion -compositeVersion"
+  register: release_version
+  failed_when: release_version.rc not in [ 0, 1 ]
+
+- name: display database release update to apply or rollback patch
+  debug:
+    var: release_version.stdout
+
+- include_tasks: ru_out_of_place_switch_main.yml
+  when: db_type.stdout == "0" and release_version.stdout < "19.20.0.0.0"
+
+- include_tasks: ru_rac_out_of_place_switch_main.yml
+  when: db_type.stdout != "0" and release_version.stdout < "19.20.0.0.0"

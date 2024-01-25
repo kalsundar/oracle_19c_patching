@@ -1,0 +1,40 @@
+---
+- name: install ojvm patch on the database home
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch apply {{ patch_local_dir }}/{{ ojvm_patch_id }} -oh {{ ORACLE_HOME }}
+  register: db_ojvmpatch_apply
+  tags:
+    - ojvmapply
+
+- name: display database home ojvm patch apply log
+  debug:
+    var: db_ojvmpatch_apply.stdout_lines
+  tags:
+    - ojvmapply
+
+- name: copy the database home ojvm patch apply log to a file
+  copy:
+    content: "{{ db_ojvmpatch_apply.stdout }}"
+    dest: "{{ log_dir }}/db_ojvm_patch_apply_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - ojvmapply
+
+- name: install ojvm patch on the database home 2
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch apply {{ patch_local_dir }}/{{ ojvm_patch_id }} -oh {{ ORACLE_HOME_2 }}
+  register: db_ojvmpatch_apply2
+  tags:
+    - ojvmapply
+
+- name: display database home 2 ojvm patch apply log
+  debug:
+    var: db_ojvmpatch_apply2.stdout_lines
+  tags:
+    - ojvmapply
+
+- name: copy the database home 2 ojvm patch apply log to a file
+  copy:
+    content: "{{ db_ojvmpatch_apply2.stdout }}"
+    dest: "{{ log_dir }}/db_ojvm_patch_apply_2_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - ojvmapply

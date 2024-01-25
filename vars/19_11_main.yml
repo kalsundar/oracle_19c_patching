@@ -1,0 +1,12 @@
+# variables to apply oracle release update 19.11 to apply on the current 19.03 relase update.
+log_dir: "/orautl/SOFTWARE/19cSoftware/19.11.PatchSet/ru_apply_log"
+rb_log_dir: "/orautl/SOFTWARE/19cSoftware/19.11.PatchSet/ru_rollback_log"
+patch_dir: "/orautl/SOFTWARE/19cSoftware/19.11.PatchSet"
+current_version: 1903
+gi_patch_id: 32545008
+db_patch_id: 32545013
+patch_id_1: 32579761
+patch_id_2: 32584670
+patch_id_3: 32545013
+patch_id_4: 32576499
+patch_id_5: 32585572

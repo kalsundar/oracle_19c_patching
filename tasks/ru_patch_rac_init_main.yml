@@ -1,0 +1,76 @@
+---
+- name: create directory structure to install or rollback patch
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/{{ item }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0777
+  loop:
+    - orahomebackup
+    - ru_apply_log
+    - ru_rollback_log
+    - scripts
+    - one-off
+  run_once: true
+
+- name: Copy files to install or rollback patch
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: "{{ script_loc }}"
+    owner: oracle
+    group: dba
+    mode: 0777
+  loop:
+    - racinststopstart.sh
+    - racsvcrelocate.sh
+    - racsvcverify.sh
+    - open_all_pdb.sh
+    - pdb_open_status.sh
+    - db_comp_status.sh
+    - compile_invalid_obj.sh
+    - db_sql_patch_status.sh
+  run_once: true
+
+- name: generate shell script to relocate services
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc}}/racsvcrelocate.sh {{ script_loc}}"
+  ignore_errors: true
+  tags:
+    - dir_create
+  run_once: true
+
+- name: generate shell script to verify service relocation
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc}}/racsvcverify.sh {{ script_loc}}"
+  ignore_errors: true
+  tags:
+    - dir_create
+  run_once: true
+
+- name: generate shell script to stop and start instance
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc}}/racinststopstart.sh {{ script_loc}}"
+  ignore_errors: true
+  tags:
+    - dir_create
+  run_once: true
+
+- name: change the permissions of the shell script to the oracle user and group
+  ansible.builtin.file:
+    path: "{{ script_loc }}"
+    state: directory
+    recurse: yes
+    owner: oracle
+    group: dba
+    mode: 0777
+  ignore_errors: true
+  tags:
+    - dir_create
+  run_once: true

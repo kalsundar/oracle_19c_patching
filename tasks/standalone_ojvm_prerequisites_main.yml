@@ -1,0 +1,4 @@
+---
+# complete prerequisites to install or rollback release update and ojvm patch
+- include_tasks: ru_standalone_prerequisites.yml
+- include_tasks: standalone_ojvm_prerequisites.yml

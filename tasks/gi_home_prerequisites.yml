@@ -1,0 +1,39 @@
+---
+- name: Upgrade Grid Infra Home OPatch Utility
+  become_user: root
+  ansible.builtin.shell:
+    cmd: mv {{ GI_ORACLE_HOME }}/OPatch {{ GI_ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{GI_ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip; chown -R oracle:dba {{ GI_ORACLE_HOME }}/OPatch
+  ignore_errors: true
+
+- name: Verify Grid Infra Home OPatch Utility Version
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch version
+  register: gi_home_opatch_version
+
+- name: display grid infra home OPatch Utility Version
+  debug:
+    var: gi_home_opatch_version.stdout_lines
+
+- name: Verify Grid Infra home patch conflict
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";export PATH=$ORACLE_HOME/OPatch:/usr/ccs/bin:$PATH;opatchauto apply {{ patch_local_dir }}/{{gi_patch_id}} -oh {{GI_ORACLE_HOME}} -analyze
+  register: gi_home_conflict_status
+
+- name: display grid infra home patch conflict output
+  become_user: root
+  debug:
+    var: gi_home_conflict_status.stdout_lines
+
+- name: create patch list file to check System free space
+  ansible.builtin.shell:
+    cmd: echo "{{ patch_local_dir }}/{{ gi_patch_id }}/{{ patch_id_1 }}" > /tmp/patch_list_gihome.txt;echo "{{ patch_local_dir }}/{{ gi_patch_id }}/{{ patch_id_2 }}" >> /tmp/patch_list_gihome.txt;echo "{{ patch_local_dir }}/{{ gi_patch_id }}/{{ patch_id_3 }}" >> /tmp/patch_list_gihome.txt;echo "{{ patch_local_dir }}/{{ gi_patch_id }}/{{ patch_id_4 }}" >> /tmp/patch_list_gihome.txt;echo "{{ patch_local_dir }}/{{ gi_patch_id }}/{{ patch_id_5 }}" >> /tmp/patch_list_gihome.txt
+
+- name: checking System free space to apply grid infra patch
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";export PATH=$ORACLE_HOME/OPatch:/usr/ccs/bin:$PATH;opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_gihome.txt
+  register: system_free_space
+
+- name: display system free space check output
+  debug:
+    var: system_free_space.stdout_lines

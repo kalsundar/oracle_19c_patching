@@ -1,0 +1,12 @@
+---
+- name: checking backup files from the backup location
+  become_user: root
+  ansible.builtin.shell:
+    cmd: ls -lrth {{patch_dir}}/orahomebackup/{{ ansible_hostname }}_*
+  register: list_backup_file
+  ignore_errors: true
+
+- name: list backup files from the backup location
+  become_user: root
+  debug:
+    var: list_backup_file.stdout_lines

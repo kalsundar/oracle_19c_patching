@@ -1,0 +1,84 @@
+---
+- name: cleanup inactive patch on grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch util deleteinactivepatches -silent
+  register: gi_opatch_clean
+  tags:
+    - gi_cleanup
+
+- name: display cleanup of inactive patch on grid infrastructure home log
+  debug:
+    var: gi_opatch_clean.stdout_lines
+  tags:
+    - gi_cleanup
+
+- name: list inactive patch on grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch util listorderedinactivepatches
+  register: gi_inactive_patch
+  tags:
+    - gi_cleanup
+
+- name: display list of inactive patch on grid infrastructure home log
+  debug:
+    var: gi_inactive_patch.stdout_lines
+  tags:
+    - gi_cleanup
+
+- name: cleanup inactive patch on oracle database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch util deleteinactivepatches -silent
+  register: db_opatch_clean
+  tags:
+    - db_cleanup
+
+- name: display cleanup of inactive patch on oracle database home log
+  debug:
+    var: db_opatch_clean.stdout_lines
+  tags:
+    - db_cleanup
+
+- name: list inactive patch on oracle database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch util listorderedinactivepatches
+  register: db_inactive_patch
+  tags:
+    - db_cleanup
+
+- name: display list of inactive patch on oracle database home log
+  debug:
+    var: db_inactive_patch.stdout_lines
+  tags:
+    - db_cleanup
+
+- name: cleanup inactive patch on oracle database home 2
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch util deleteinactivepatches -silent
+  register: db_opatch_clean2
+  tags:
+    - db_cleanup
+
+- name: display cleanup of inactive patch on oracle database home 2 log
+  debug:
+    var: db_opatch_clean2.stdout_lines
+  tags:
+    - db_cleanup
+
+- name: list inactive patch on oracle database home 2
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch util listorderedinactivepatches
+  register: db_inactive_patch2
+  tags:
+    - db_cleanup
+
+- name: display list of inactive patch on oracle database home 2 log
+  debug:
+    var: db_inactive_patch2.stdout_lines
+  tags:
+    - db_cleanup
+
+- name: list inactive patch on finance database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch util listorderedinactivepatches
+  register: db_inactive_fin
+  when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")

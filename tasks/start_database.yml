@@ -1,0 +1,39 @@
+---
+- name: start database to perform post installation steps
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: srvctl start database -d {{ ORACLE_SID }}
+
+- name: Execute SQL Statement to get pdb status
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: |
+      sqlplus /nolog <<EOF
+      conn / as sysdba
+      set feedback off
+      SET SERVEROUTPUT ON SIZE 5000;
+      SET LINESIZE 200;
+      set pagesize 2000;
+      set long 500;
+      col open_mode for a15
+      col name for a25
+      select instance_name,host_name from v\$instance;
+      alter pluggable database all open;
+      select con_id,name,open_mode from v\$pdbs order by con_id;
+      EOF
+  register: pdb_status
+
+- name: display pdb open status
+  debug:
+    var: pdb_status.stdout_lines
+
+- name: copy the pdb open status output to a log file
+  copy:
+    content: "{{ pdb_status.stdout }}"
+    dest: "{{ log_dir }}/pdb_open_mode_status_{{ ORACLE_SID }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

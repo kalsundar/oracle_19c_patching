@@ -1,0 +1,11 @@
+---
+- name: oracle database release update installation
+  hosts: "{{ host_group }}"
+  order: sorted
+  become_method: sudo
+  become_user: oracle
+  become: true
+  roles:
+    # - ansible-role_orapatch
+    - oracle_patching_migr_tower_2_aap
+...

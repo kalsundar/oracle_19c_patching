@@ -1,0 +1,99 @@
+---
+- name: remove local directory to cleanup older patch files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: absent
+  tags:
+    - dir_create
+
+- name: create local directory to copy release update files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+  tags:
+    - dir_create
+
+- name: create temporary directory to create temp files during the patch process
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}/tmp"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0777
+  tags:
+    - dir_create
+
+- name: copy release update to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ gi_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+  tags:
+    - file_copy
+
+- name: upgrade grid infrastructure home OPatch utility
+  become_user: root
+  ansible.builtin.shell:
+    cmd: mv {{ GI_ORACLE_HOME }}/OPatch {{ GI_ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{GI_ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip; chown -R oracle:dba {{ GI_ORACLE_HOME }}/OPatch
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: verify grid infrastructure home OPatch utility version
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch version
+  register: gi_opatch_version
+  tags:
+    - opatch_upgrade
+
+- name: display grid infrastructure home OPatch utility version
+  debug:
+    var: gi_opatch_version.stdout_lines
+  tags:
+    - opatch_upgrade
+
+- name: verify grid infrastructure home patch conflict
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";export PATH=$ORACLE_HOME/OPatch:/usr/ccs/bin:$PATH;opatchauto apply {{ patch_local_dir }}/{{gi_patch_id}} -oh {{GI_ORACLE_HOME}} -analyze
+  register: gi_home_conflict_status
+  tags:
+    - patch_conflict
+
+- name: display grid infrastructure home patch conflict output
+  become_user: root
+  debug:
+    var: gi_home_conflict_status.stdout_lines
+  tags:
+    - patch_conflict
+
+- name: backup grid infrastructure home
+  become_user: root
+  community.general.archive:
+    path: "{{ GI_ORACLE_HOME }}"
+    dest: "{{ patch_dir }}/orahomebackup/{{ ansible_hostname }}_{{ current_version }}_gi_{{ lookup('pipe', 'date +%m%d-%H%M') }}.tar.gz"
+    format: gz
+  tags:
+    - gi_file_bkp
+
+- name: checking backup file from the backup location
+  become_user: root
+  ansible.builtin.shell:
+    cmd: ls -lrth {{patch_dir}}/orahomebackup/{{ ansible_hostname }}_*
+  register: list_backup_file
+  ignore_errors: true
+  tags:
+    - gi_file_bkp
+
+- name: list backup file from the backup location
+  become_user: root
+  debug:
+    var: list_backup_file.stdout_lines
+  tags:
+    - gi_file_bkp

@@ -1,0 +1,381 @@
+---
+# main conditional task file to install or rollback grid infrastructure and database home
+# release update or one-off patch on Non-RAC and RAC database
+
+- name: Verify database type to apply or rollback patch
+  block:
+    - name: check non-fin database type RAC or Non-RAC to apply or rollback patches
+      ansible.builtin.shell:
+        cmd: cd {{ ORACLE_HOME }}/rdbms/lib;ar -t libknlopt.a | grep -c kcsm.o
+      register: db_type
+      failed_when: db_type.rc not in [ 0, 1 ]
+  rescue:
+    - name: check fin database type RAC or Non-RAC to apply or rollback patches
+      ansible.builtin.shell:
+        cmd: cd {{ FIN_ORACLE_HOME }}/rdbms/lib;ar -t libknlopt.a | grep -c kcsm.o
+      register: db_type
+      failed_when: db_type.rc not in [ 0, 1 ]
+  always:
+    - name: display database type to apply or rollback patch
+      debug:
+        var: db_type.stdout
+
+- name: Verify database release version to apply or rollback patches
+  block:
+    - name: check database release update to apply or rollback patches
+      ansible.builtin.shell:
+        cmd: "{{ ORACLE_HOME }}/bin/oraversion -compositeVersion"
+      register: release_version
+      failed_when: release_version.rc not in [ 0, 1 ]
+  rescue:
+    - name: check fin database release update to apply or rollback patches
+      ansible.builtin.shell:
+        cmd: "{{ FIN_ORACLE_HOME }}/bin/oraversion -compositeVersion"
+      register: release_version
+      failed_when: release_version.rc not in [ 0, 1 ]
+  always:
+    - name: display database type to apply or rollback patch
+      debug:
+        var: release_version.stdout
+
+# - name: Verify database type to apply or rollback patch
+#   ansible.builtin.shell:
+#     cmd: cd {{ FIN_ORACLE_HOME }}/rdbms/lib;ar -t libknlopt.a | grep -c kcsm.o
+#   register: db_type
+#   ignore_errors: true
+#   failed_when: db_type.rc not in [ 0, 1 ]
+
+# - name: display database type to apply or rollback patch
+#   ignore_errors: true
+#   debug:
+#     var: db_type.stdout
+
+# - name: Verify database release update to apply or rollback patch
+#   ansible.builtin.shell:
+#     cmd: "{{ FIN_ORACLE_HOME }}/bin/oraversion -compositeVersion"
+#   register: release_version
+#   ignore_errors: true
+#   failed_when: release_version.rc not in [ 0, 1 ]
+
+# - name: display database release update to apply or rollback patch
+#   ignore_errors: true
+#   debug:
+#     var: release_version.stdout
+
+# - name: Verify database release update to apply or rollback patch
+#   ansible.builtin.shell:
+#     cmd: "{{ DR_ORACLE_HOME }}/bin/oraversion -compositeVersion"
+#   register: release_version
+#   ignore_errors: true
+#   failed_when: release_version.rc not in [ 0, 1 ]
+
+# - name: display database release update to apply or rollback patch
+#   ignore_errors: true
+#   debug:
+#     var: release_version.stdout
+
+#delete inactive patch to reclaim occupied space
+
+- include_tasks: opatch_util_cleanup_main.yml
+  when: release_update_step == "opatch_cleanup" and db_type.stdout == "0"
+
+- include_tasks: rac_opatch_util_cleanup_main.yml
+  when: release_update_step == "opatch_cleanup" and db_type.stdout != "0"
+
+#create required directories to install or rollback the release update or one-off patch
+
+- include_tasks: ru_patch_init_main.yml
+  when: release_update_step == "ruinit" and db_type.stdout == "0"
+
+- include_tasks: ru_patch_rac_init_main.yml
+  when: release_update_step == "ruinit" and db_type.stdout != "0"
+
+- include_tasks: ru_patch_dr_init_main.yml
+  when: release_update_step == "rudrinit"
+
+#primary - perform the prerequisites to install the release update in Non-Fin db's
+- include_tasks: ru_standalone_prerequisites.yml
+  when: release_update_step == "ruprecheck" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+- include_tasks: ru_rac_prerequisites_main.yml
+  when: release_update_step == "ruprecheck" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#standby - perform the prerequisites to install the release update
+- include_tasks: ru_dr_prerequisites_main.yml
+  when: release_update_step == "rudrprecheck" and release_version.stdout < "19.21.0.0.0"
+
+#primary - perform the prerequisites to install the release update with OJVM in Non-Fin db's
+
+# - include_tasks: standalone_ojvm_prerequisites_main.yml
+#   when: release_update_step == "ruprecheckojvm" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: rac_ojvm_prerequisites_main.yml
+#   when: release_update_step == "ruprecheckojvm" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#primary - perform the prerequisites to install the release update in Fin db nodes GI only patches
+
+- include_tasks: fin_ru_gi_prerequisites_main.yml
+  when: release_update_step == "rufingiprecheck" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+- include_tasks: fin_ru_rac_gi_prerequisites_main.yml
+  when: release_update_step == "rufingiprecheck" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#primary - perform the prerequisites to install the release update with OJVM in Fin db's
+# - include_tasks: fin_ru_ojvm_prerequisites_main.yml
+#   when: release_update_step == "rufinprecheck" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: fin_ru_ojvm_prerequisites_main.yml
+#   when: release_update_step == "rufinprecheck" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+## out-of-place patch via OPatchAuto Utility
+#primary - clone the current database home and install release update patch in Non-Fin db's
+
+# - include_tasks: ru_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_db_clone" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_rac_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_db_clone" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#standby - clone the current database home and install release update patch
+# - include_tasks: dr_oop_db_clone_main.yml
+#   when: release_update_step == "dr_oop_db_clone"
+
+## out-of-place patch via OPatchAuto Utility
+#primary - step 1 : clone the current database home and install release update with OJVM patch in Non-Fin db's
+
+# - include_tasks: ru_ojvm_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_ojvm_db_clone" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_ojvm_rac_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_ojvm_db_clone" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+# out-of-place patch via OPatchAuto Utility
+#primary - step 1 : clone the current grid insfrastructure home and install release update patch
+#the GI_OOP_CLONE is to be executed GI only OOP in fin db nodes also
+# - include_tasks: ru_out_of_place_grid_clone_main.yml
+#   when: release_update_step == "oop_gi_clone" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_rac_out_of_place_grid_clone_main.yml
+#   when: release_update_step == "oop_gi_clone" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#standby - step 1 : clone the current grid insfrastructure home and install release update patch
+# - include_tasks: dr_oop_grid_clone_main.yml
+#   when: release_update_step == "dr_oop_gi_clone"
+
+# out-of-place patch via OPatchAuto Utility
+#primary - step 2 : switch the current database and grid insfrastructure home to the cloned home
+#start database and perform post installation tasks
+
+# - include_tasks: ru_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_switch" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_rac_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_switch" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+#standby - step 2 : switch the current database and grid insfrastructure home to the cloned home
+#start database and perform post installation tasks
+# - include_tasks: dr_oop_switch_main.yml
+#   when: release_update_step == "dr_oop_switch"
+
+# out-of-place patch via OPatchAuto Utility
+#primary - step 2 : switch the current database and grid insfrastructure home to the cloned home with OJVM
+#start database and perform post installation tasks for Non-fin db's
+
+# - include_tasks: ru_ojvm_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_ojvm_switch" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_ojvm_rac_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_ojvm_switch" and db_type.stdout != "0" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: fin_ru_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_switch" and db_type.stdout == "0"
+
+#primary - step 2a Incase the OpatchAuto failed : switch the grid insfrastructure home to the cloned home
+
+# - include_tasks: oop_gi_switch_option_2_main.yml
+#   when: release_update_step == "oop_switch_2"
+
+#primary - install release update patch in database home and switch grid to cloned home on Fin db's
+
+# - include_tasks: ru_fin_condition_validate_main.yml
+#   when: release_update_step == "rufinapply"
+
+# - include_tasks: ru_rac_fin_gi_only_patch_main.yml
+#   when: release_update_step == "rufingi"
+
+#primary - install the release update or release update with ojvm on NON-RAC and RAC database
+
+- include_tasks: ru_apply_main.yml
+  when: release_update_step == "ruapply" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+- include_tasks: ru_rac_apply_main.yml
+  when: release_update_step == "ruapply" and db_type.stdout == "1" and release_version.stdout < "19.21.0.0.0"
+
+# - include_tasks: ru_apply_ojvm_main.yml
+#   when: release_update_step == "ruapplyojvm" and db_type.stdout == "0" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_rac_apply_ojvm_main.yml
+#   when: release_update_step == "ruapplyojvm" and db_type.stdout == "1" and release_version.stdout < "19.19.0.0.0"
+
+- include_tasks: fin_ru_apply_ojvm_main.yml
+  when: release_update_step == "rufinapply" and db_type.stdout == "0" and release_version.stdout < "19.21.0.0.0"
+
+- include_tasks: fin_rac_ru_apply_ojvm_main.yml
+  when: release_update_step == "rufinapply" and db_type.stdout == "1" and release_version.stdout < "19.21.0.0.0"
+# - include_tasks: ru_rac_gi_only_apply_main.yml
+#   when: release_update_step == "ruracgiapply"
+#  and release_version.stdout < "19.19.0.0.0"
+
+#invoke datapatch to complete the post installation steps
+#primary - release update patch post installation steps
+
+- include_tasks: ru_db_sql_main.yml
+  when: release_update_step == "rudbsql" and db_type.stdout == "0"
+
+- include_tasks: ru_rac_db_sql_main.yml
+  when: release_update_step == "rudbsql" and db_type.stdout != "0"
+
+#primary - release update and ojvm patch post installation steps in CLS and FIN db's
+- include_tasks: ru_ojvm_db_sql_main.yml
+  when: release_update_step == "ruojvmdbsql"
+
+#primary - release update and ojvm patch post installation steps in Non CLS and FIN db's
+- include_tasks: ru_ojvm_sql_main.yml
+  when: release_update_step == "ruojvmsql"
+##### ------------------------------completed installation related playbook tasks------------------
+# - include_tasks: ru_ojvm_prereq_condition_validate_main.yml
+#   when: release_update_step == "ruprecheckojvm"
+
+# - include_tasks: ru_standalone_prerequisites.yml
+#   when: release_update_step == "ruprecheck" and db_type.stdout == "0" and release_version.stdout < "19.20.0.0.0"
+
+# - include_tasks: ru_rac_prerequisites_main.yml
+#   when: release_update_step == "ruprecheck" and db_type.stdout != "0" and release_version.stdout < "19.20.0.0.0"
+
+# - include_tasks: ru_gi_only_prerequisites.yml
+#   when: release_update_step == "ruracgiprecheck" and release_version.stdout < "19.20.0.0.0"
+
+# clone grid and database home to install release update and OJVM patch using out-of-place patch
+
+# - include_tasks: oop_grid_clone_condition_validate_main.yml
+#   when: release_update_step == "oop_gi_clone"
+
+# - include_tasks: oop_db_clone_condition_validate_main.yml
+#   when: release_update_step == "oop_db_clone"
+
+# - include_tasks: ru_out_of_place_grid_clone_main.yml
+#   when: release_update_step == "oop_gi_clone" and db_type.stdout == "0" and release_version.stdout < "19.20.0.0.0"
+
+# - include_tasks: ru_rac_out_of_place_grid_clone_main.yml
+#   when: release_update_step == "oop_gi_clone" and db_type.stdout != "0" and release_version.stdout < "19.20.0.0.0"
+
+# - include_tasks: ru_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_db_clone" and db_type.stdout == "0" and release_version.stdout < "19.20.0.0.0"
+
+# - include_tasks: ru_rac_out_of_place_db_clone_main.yml
+#   when: release_update_step == "oop_db_clone" and db_type.stdout != "0" and release_version.stdout < "19.20.0.0.0"
+
+# switch grid and database home to cloned home and bring up the cluster and db's
+
+# - include_tasks: oop_db_switch_main.yml
+#   when: release_update_step == "oop_db_switch"
+
+# - include_tasks: oop_switch_condition_validate_main.yml
+#   when: release_update_step == "oop_switch"
+
+# - include_tasks: oop_gi_switch_option_2_main.yml
+#   when: release_update_step == "oop_switch_2"
+
+# - include_tasks: oop_db_start_main.yml
+#   when: release_update_step == "oop_db_start"
+
+# - include_tasks: ru_fin_condition_validate_main.yml
+#   when: release_update_step == "rufinapply"
+
+# - include_tasks: ru_ojvm_db_sql_main.yml
+#   when: release_update_step == "ruojvmdbsql"
+
+## Non CLS and FIN db's
+# - include_tasks: ru_ojvm_sql_main.yml
+#   when: release_update_step == "ruojvmsql"
+
+# - include_tasks: rac_svc_relocate_stop_instance.yml
+#   when: release_update_step == "inst_stop"
+
+# - include_tasks: rac_start_inst_svc_relocate.yml
+#   when: release_update_step == "inst_start"
+# - include_tasks: ru_apply_condition_validate_main.yml
+#   when: release_update_step == "ruapply"
+
+# - include_tasks: ru_ojvm_apply_condition_validate_main.yml
+#   when: release_update_step == "ruapplyojvm"
+
+# - include_tasks: ru_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_switch" and db_type.stdout == "0" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_rac_out_of_place_switch_main.yml
+#   when: release_update_step == "oop_switch" and db_type.stdout == "1" and release_version.stdout < "19.19.0.0.0"
+#primary - install the release update or release update with ojvm on NON-RAC and RAC database
+# - include_tasks: ru_apply_main.yml
+#   when: release_update_step == "ruapply" and db_type.stdout == "0" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_rac_apply_main.yml
+#   when: release_update_step == "ruapply" and db_type.stdout == "1" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_apply_ojvm_main.yml
+#   when: release_update_step == "ruapplyojvm" and db_type.stdout == "0" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_rac_apply_ojvm_main.yml
+#   when: release_update_step == "ruapplyojvm" and db_type.stdout == "1" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: fin_ru_apply_ojvm_main.yml
+#   when: release_update_step == "rufinapply" and db_type.stdout == "0" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: fin_rac_ru_apply_ojvm_main.yml
+#   when: release_update_step == "rufinapply" and db_type.stdout == "1" and release_version.stdout < "19.19.0.0.0"
+# - include_tasks: ru_rac_gi_only_apply_main.yml
+#   when: release_update_step == "ruracgiapply"
+#  and release_version.stdout < "19.19.0.0.0"
+
+#invoke datapatch to complete the post installation steps
+
+# - include_tasks: ru_db_sql_main.yml
+#   when: release_update_step == "rudbsql" and db_type.stdout == "0"
+
+# - include_tasks: ru_rac_db_sql_main.yml
+#   when: release_update_step == "rudbsql" and db_type.stdout == "1"
+
+#standby database - perform the prerequisites to install the release update and install release update
+
+# - include_tasks: ru_dr_apply_main.yml
+#   when: release_update_step == "rudrapply" and host_group in [ ora_dr1, ora_dr2] and release_version.stdout < "19.19.0.0.0"
+
+# - include_tasks: ru_dr_apply_ojvm_main.yml
+#   when: release_update_step == "rudrapplyojvm" and host_group in [ ora_dr1, ora_dr2] and release_version.stdout < "19.19.0.0.0"
+
+# # # deinstall(rollback) grid infrastructure and database home release update on Non-RAC database and RAC database
+
+# - include_tasks: rb_oop_switch_condition_validate_main.yml
+#   when: release_update_step == "rb_oop_switch"
+
+# - include_tasks: rb_ru_condition_validate_main.yml
+#   when: release_update_step == "rurollback"
+
+# - include_tasks: rb_ru_ojvm_condition_validate_main.yml
+#   when: release_update_step == "rurbojvm"
+
+# - include_tasks: rb_ru_fin_condition_validate_main.yml
+#   when: release_update_step == "rufinrb"
+# - include_tasks: rb_ru_rollback_main.yml
+#   when: release_update_step == "rurollback" and db_type.stdout == "0" and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_rac_rollback_main.yml
+#   when: release_update_step == "rurollback" and db_type.stdout == "1" and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_rollback_ojvm_main.yml
+#   when: release_update_step == "rurbojvm" and db_type.stdout == "0" and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_rac_rollback_ojvm_main.yml
+#   when: release_update_step == "rurbojvm" and db_type.stdout == "1" and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_dr_rollback_main.yml
+#   when: release_update_step == "rurollback" and host_group in [ ora_dr1, ora_dr2] and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_dr_rollback_ojvm_main.yml
+#   when: release_update_step == "rurbojvm" and host_group in [ ora_dr1, ora_dr2] and release_version.stdout >= "19.19.0.0.0"
+
+# - include_tasks: rb_ru_db_sql_rollback_main.yml
+#   when: release_update_step == "rudbsqlrollback" and db_type.stdout == "1"

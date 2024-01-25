@@ -1,0 +1,26 @@
+---
+- name: deinstall release update on the grid infrastructure home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ GI_ORACLE_HOME }}
+  register: gi_opatch_rollback
+  tags:
+    - girollback
+    - gi_dbrollback
+
+- name: display grid infrastructure patch rollback log
+  become_user: root
+  debug:
+    var: gi_opatch_rollback.stdout_lines
+  tags:
+    - girollback
+    - gi_dbrollback
+
+- name: copy the grid infrastructure patch rollback log to a file
+  become_user: root
+  copy:
+    content: "{{ gi_opatch_rollback.stdout }}"
+    dest: "{{ rb_log_dir }}/gi_opatch_rollback_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - girollback
+    - gi_dbrollback

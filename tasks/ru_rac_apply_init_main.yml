@@ -1,0 +1,4 @@
+---
+# tasks to create initial folder structure to backup current home files and spool patch installation log files
+- include_tasks: create_backup_and_log_dir.yml
+- include_tasks: create_svc_inst_script.yml

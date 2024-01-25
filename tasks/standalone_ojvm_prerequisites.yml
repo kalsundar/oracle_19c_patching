@@ -1,0 +1,24 @@
+---
+- name: copy release update to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ ojvm_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+  tags:
+    - file_copy
+
+- name: Verify patch conflict against database home
+  ansible.builtin.shell:
+    cmd: cd {{ patch_local_dir }}/{{ ojvm_patch_id }};export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";export PATH={{ ORACLE_HOME }}/OPatch:/usr/ccs/bin:$PATH;opatch prereq CheckConflictAgainstOHWithDetail -ph .
+  register: db_home_conflict_status
+  tags:
+    - patch_conflict
+
+- name: display database home patch conflict output
+  debug:
+    var: db_home_conflict_status.stdout_lines
+  tags:
+    - patch_conflict

@@ -1,0 +1,243 @@
+---
+- name: service running status on the node
+  environment:
+    ORACLE_HOME: "{{ FIN_ORACLE_HOME }}"
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_svc_status_{{ ansible_host }}.sh"
+  register: rb_svc_running
+  ignore_errors: true
+  tags:
+    - rb_stop_db
+  failed_when: rb_svc_running.rc not in [ 0, 1 ]
+
+- name: display service running status on the current node
+  debug:
+    var: rb_svc_running.stdout_lines
+  tags:
+    - rb_stop_db
+
+- name: copy service running status on the current node to a file
+  copy:
+    content: "{{ rb_svc_running.stdout }}"
+    dest: "{{ rb_log_dir }}/svc_running_on_{{ ansible_host }}_prepatch.log"
+  ignore_errors: true
+  tags:
+    - rb_stop_db
+
+- name: stop database and related service on the current node to rollback patch
+  environment:
+    ORACLE_HOME: "{{ FIN_ORACLE_HOME }}"
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_stop_{{ ansible_host }}_prepatch.sh"
+  register: rb_db_stop
+  tags:
+    - rb_stop_db
+  failed_when: rb_db_stop.rc not in [ 0, 1 ]
+
+- name: display stop database status
+  debug:
+    var: rb_db_stop.stdout_lines
+  tags:
+    - rb_stop_db
+
+- name: rollback release update on the database home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ FIN_ORACLE_HOME }}
+  register: opatch_rollback
+  tags:
+    - rurollback
+
+- name: display database home patch rollback log
+  become_user: root
+  debug:
+    var: opatch_rollback.stdout_lines
+  tags:
+    - rurollback
+
+- name: copy the database home patch rollback log to a file
+  become_user: root
+  copy:
+    content: "{{ opatch_rollback.stdout }}"
+    dest: "{{ rb_log_dir }}/db_opatch_rollback_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rurollback
+
+- name: rollback ojvm patch on the database home
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch rollback -id {{ ojvm_patch_id }} -oh {{ FIN_ORACLE_HOME }} -silent
+  register: db_ojvmpatch_rb
+  tags:
+    - ojvmrollback
+
+- name: display database home ojvm patch rollback log
+  debug:
+    var: db_ojvmpatch_rb.stdout_lines
+  tags:
+    - ojvmrollback
+
+- name: copy the database home ojvm patch rollback log to a file
+  copy:
+    content: "{{ db_ojvmpatch_rb.stdout }}"
+    dest: "{{ rb_log_dir }}/db_ojvm_patch_rollback_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - ojvmrollback
+
+- name: rollback one-off patch on the database home
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";cd {{ patch_dir }}/one-off;$ORACLE_HOME/OPatch/opatch nrollback -id 35037877,35119957 -oh {{ FIN_ORACLE_HOME }} -silent
+  register: rb_db_one_off
+  tags:
+    - rb_oneoff
+
+- name: display database home one-off patch rollback log
+  debug:
+    var: rb_db_one_off.stdout_lines
+  tags:
+    - rb_oneoff
+
+- name: verify release update rollback on the database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  ignore_errors: true
+  register: rb_db_opatch_lsinv
+  tags:
+    - ruverify
+
+- name: display database home opatch log
+  debug:
+    var: rb_db_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify
+
+- name: switch grid infrastructure resources to cloned home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ CL_GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto rollback -switch-clone -oh {{ CL_GI_ORACLE_HOME }}
+  register: rb_opatch_switch
+  tags:
+    - rb_oop_switch
+
+- name: display rolled back grid infrastructure resources status
+  become_user: root
+  debug:
+    var: rb_opatch_switch.stdout_lines
+  tags:
+    - rb_oop_switch
+
+- name: copy the grid infrastructure rollback switch operation log to a file
+  become_user: root
+  copy:
+    content: "{{ rb_opatch_switch.stdout }}"
+    dest: "{{ rb_log_dir }}/gi_opatch_rb_switch_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rb_oop_switch
+
+- name: verify release update version on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  ignore_errors: true
+  register: rb_gi_opatch_lsinv
+  tags:
+    - oop_switch_verify
+
+- name: display grid infrastructure opatch lspatches output
+  debug:
+    var: rb_gi_opatch_lsinv.stdout_lines
+  tags:
+    - oop_switch_verify
+
+- name: startup database in upgrade mode to perform post deinstallation steps
+  environment:
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/startup_upgrade.sh"
+  register: rb_start_upgrade
+  tags:
+    - rb_startup_upgrade
+  failed_when: rb_start_upgrade.rc not in [ 0, 1 ]
+
+- name: display startup database output from the current node
+  debug:
+    var: rb_start_upgrade.stdout_lines
+  tags:
+    - rb_startup_upgrade
+
+- include_tasks: compile_invalid_objects.yml
+- include_tasks: database_ru_post_installation.yml
+
+- name: stop database and related service on the current node
+  environment:
+    ORACLE_HOME: "{{ FIN_ORACLE_HOME }}"
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_stop_{{ ansible_host }}_prepatch.sh"
+  register: rb_db_stop_stat
+  tags:
+    - rb_shut_upgrade
+  failed_when: rb_db_stop_stat.rc not in [ 0, 1 ]
+
+- name: display database status
+  debug:
+    var: rb_db_stop_stat.stdout_lines
+  tags:
+    - rb_shut_upgrade
+
+- name: start database on the current node
+  environment:
+    ORACLE_HOME: "{{ FIN_ORACLE_HOME }}"
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_start_{{ ansible_host }}_postpatch.sh"
+  register: rb_start_db
+  tags:
+    - rb_start_db
+  failed_when: rb_start_db.rc not in [ 0, 1 ]
+
+- name: display start database output from the current node
+  debug:
+    var: rb_start_db.stdout_lines
+  tags:
+    - rb_start_db
+
+- name: Execute SQL Statement to get pdb status
+  environment:
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/open_all_pdb.sh"
+  register: rb_pdb_open
+  tags:
+    - rb_start_db
+  failed_when: rb_pdb_open.rc not in [ 0, 1 ]
+
+- name: display pdb open status
+  debug:
+    var: rb_pdb_open.stdout_lines
+  tags:
+    - rb_start_db
+
+- name: Execute SQL Statement to get pdb open status
+  environment:
+    PATH: "{{ FIN_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/pdb_open_status.sh"
+  register: rb_pdb_open_status
+  tags:
+    - rb_start_db
+  failed_when: rb_pdb_open_status.rc not in [ 0, 1 ]
+
+- name: copy the pdb open status output to a log file
+  copy:
+    content: "{{ rb_pdb_open_status.stdout }}"
+    dest: "{{ rb_log_dir }}/rb_pdb_open_status{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - rb_start_db
+
+# the below task will validate database component status, SQL patch apply status
+- include_tasks: release_update_post_validation.yml
+- include_tasks: compile_invalid_objects.yml

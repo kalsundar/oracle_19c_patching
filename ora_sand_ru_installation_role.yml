@@ -1,0 +1,9 @@
+---
+- name: oracle sandbox environment database release update installation role playbook
+  hosts: ora_sand1
+  become_method: sudo
+  become_user: oracle
+  become: true
+
+  roles:
+    - role: ora_sand_ru_installation_role

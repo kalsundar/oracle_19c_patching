@@ -1,0 +1,174 @@
+---
+# The below list of tasks to stop the database, apply database and grid home release update and start the database
+
+- name: service running status on the node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_svc_status_{{ ansible_host }}.sh"
+  register: svc_running
+  ignore_errors: true
+  tags:
+    - stop_db
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+# - name: display service running status on the current node
+#   debug:
+#     var: svc_running.stdout_lines
+#   tags:
+#     - stop_db
+
+- name: copy service running status on the current node to a file
+  copy:
+    content: "{{ svc_running.stdout }}"
+    dest: "{{ log_dir }}/svc_running_on_{{ ansible_host }}_prepatch.log"
+  ignore_errors: true
+  tags:
+    - stop_db
+
+- name: stop database and related service on the current node to install patch
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_stop_{{ ansible_host }}_prepatch.sh"
+  register: db_status
+  ignore_errors: true
+  tags:
+    - stop_db
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+- name: display database status
+  debug:
+    var: db_status.stdout_lines
+  tags:
+    - stop_db
+
+- name: install release update on the grid infrastructure and database home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ GI_ORACLE_HOME }},{{ ORACLE_HOME }}
+  register: opatch_apply
+  tags:
+    - ruapply
+
+# - name: display grid infrastructure and database home patch apply log
+#   become_user: root
+#   debug:
+#     var: opatch_apply.stdout_lines
+#   tags:
+#     - ruapply
+
+- name: copy the grid infrastructure and database home patch apply log to a file
+  become_user: root
+  copy:
+    content: "{{ opatch_apply.stdout }}"
+    dest: "{{ log_dir }}/gi_db_opatch_apply_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - ruapply
+
+- name: verify release update apply on the database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  ignore_errors: true
+  register: db_opatch_lsinv
+  tags:
+    - ruverify
+
+- name: display database home opatch log
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify
+
+- name: copy the database home opatch log to a file
+  copy:
+    content: "{{ db_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/db_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - ruverify
+
+- name: verify release update apply on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lsinventory
+  ignore_errors: true
+  register: gi_opatch_lsinv
+  tags:
+    - ruverify
+
+- name: display grid infrastructure opatch lspatches output
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify
+
+- name: copy the grid infrastructure opatch lspatches output to a file
+  copy:
+    content: "{{ gi_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/gi_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - ruverify
+
+- name: start database on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_start_{{ ansible_host }}_postpatch.sh"
+  register: start_db
+  tags:
+    - start_db
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+- name: display start database output from the current node
+  debug:
+    var: start_db.stdout_lines
+  tags:
+    - start_db
+
+- name: Execute SQL Statement to get pdb status
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/open_all_pdb.sh"
+  register: pdb_status
+  tags:
+    - start_db
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+# - name: display pdb open status
+#   debug:
+#     var: pdb_status.stdout_lines
+#   tags:
+#     - start_db
+
+- name: copy the pdb open status output to a log file
+  copy:
+    content: "{{ pdb_status.stdout }}"
+    dest: "{{ log_dir }}/pdb_open_status_{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - start_db
+
+- name: service running status on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_svc_status_{{ ansible_host }}.sh"
+  register: db_svc_running
+  ignore_errors: true
+  tags:
+    - svc_verify
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+# - name: display service running status on the current node
+#   debug:
+#     var: db_svc_running.stdout_lines
+#   tags:
+#     - post_svc
+
+- include_tasks: compile_invalid_objects.yml
+- include_tasks: database_ru_post_installation.yml
+
+# the below task will validate database component status, SQL patch apply status
+- include_tasks: release_update_post_validation.yml
+- include_tasks: compile_invalid_objects.yml

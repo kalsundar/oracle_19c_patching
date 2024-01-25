@@ -1,0 +1,47 @@
+---
+- name: create backup location
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/orahomebackup"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+
+- name: create release update installation log file directory
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/ru_apply_log"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+
+- name: create release update deinstallation log file directory
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/ru_rollback_log"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+
+- name: create rac svc relocate and instance start and stop script file directory
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/scripts"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+# - name: create local directory to copy release update files
+#   ansible.builtin.file:
+#     path: "{{ patch_local_dir }}"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: create temporary directory to create temp files during the patch process
+#   ansible.builtin.file:
+#     path: "{{ patch_local_dir }}/tmp"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0777

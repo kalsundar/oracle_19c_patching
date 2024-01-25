@@ -1,0 +1,125 @@
+---
+- name: start instance on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/inst_start_{{ ansible_host }}_postpatch.sh"
+  register: start_inst
+  tags:
+    - inststart
+  failed_when: start_inst.rc not in [ 0, 1 ]
+
+- name: display start instance output from the current node
+  debug:
+    var: start_inst.stdout_lines
+  tags:
+    - inststart
+
+- name: Execute SQL Statement to get pdb status
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/open_all_pdb.sh"
+  register: rac_pdb_status
+  tags:
+    - inststart
+  failed_when: rac_pdb_status.rc not in [ 0, 1 ]
+
+- name: display pdb open status
+  debug:
+    var: rac_pdb_status.stdout_lines
+  tags:
+    - inststart
+
+- name: copy the pdb open status output to a log file
+  copy:
+    content: "{{ rac_pdb_status.stdout }}"
+    dest: "{{ log_dir }}/pdb_open_mode_status_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - inststart
+
+- name: Confirm to relocate service back to preferred node
+  ansible.builtin.pause:
+    seconds: 60
+
+- name: relocate service back to preferred instance
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/svc_relocate_{{ ansible_host }}_postpatch.sh"
+  register: rac_svc_reloc_pref
+  ignore_errors: true
+  tags:
+    - post_svc
+  failed_when: rac_svc_reloc_pref.rc not in [ 0, 1 ]
+
+- name: display service relocate output from the current node
+  debug:
+    var: rac_svc_reloc_pref.stdout_lines
+  tags:
+    - post_svc
+
+- name: copy the service relocate output from the current node to a file
+  copy:
+    content: "{{ rac_svc_reloc_pref.stdout }}"
+    dest: "{{ log_dir }}/svc_reloc_pref_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - post_svc
+
+- name: service status on the current node after relocate
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/svc_reloc_verify_{{ ansible_host }}_postpatch.sh"
+  register: rac_svc_status
+  ignore_errors: true
+  tags:
+    - post_svc
+  failed_when: rac_svc_status.rc not in [ 0, 1 ]
+
+- name: display service status on the current node
+  debug:
+    var: rac_svc_status.stdout_lines
+  tags:
+    - post_svc
+
+- name: service running status on the current instance
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/inst_svc_{{ ansible_host }}.sh"
+  register: rac_instsvc_running
+  ignore_errors: true
+  tags:
+    - post_svc
+  failed_when: rac_instsvc_running.rc not in [ 0, 1 ]
+
+- name: display service running status on the current instance
+  debug:
+    var: rac_instsvc_running.stdout_lines
+  tags:
+    - post_svc
+
+- name: copy service running status on the current instance to a file
+  copy:
+    content: "{{ rac_instsvc_running.stdout }}"
+    dest: "{{ log_dir }}/svc_running_inst_{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - post_svc
+
+- name: compare service running status pre and post patch
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w svc_running_inst_{{ ansible_host }}_postpatch.log svc_running_inst_{{ ansible_host }}_prepatch.log
+  register: rac_instsvc_diff
+  ignore_errors: true
+  tags:
+    - post_svc
+
+- name: display service running status pre and post patch
+  debug:
+    var: rac_instsvc_diff.stdout_lines
+  tags:
+    - post_svc

@@ -1,0 +1,55 @@
+[ora_dev]
+
+dloradb11a.wil.csc.local ORACLE_SID: "dappsmt" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+dloradb12a.wil.csc.local ORACLE_SID: "ddwmt" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+dloradb13a.wil.csc.local ORACLE_SID: "dssmt" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1" ORACLE_HOME: "/opt/app/oracle/product/19c/db_1"
+dloradb14a.wil.csc.local ORACLE_SID: "ddbsmt" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1" ORACLE_HOME: "/opt/app/oracle/product/19c/db_1"
+dloradb16a.wil.csc.local ORACLE_SID: "dclsmt" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1" ORACLE_HOME: "/opt/app/oracle/product/19c/db_1"
+
+
+[ora_qa]
+
+qloradb11a.wil.csc.local ORACLE_SID: "qappsmt" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1"
+qloradb12a.wil.csc.local ORACLE_SID: "qdwmt" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1"
+qloradb13a.wil.csc.local ORACLE_SID: "qssmt" ORACLE_HOME: "/opt/app/oracle/product/19c/db_1" GI_ORACLE_HOME: "/opt/app/grid/19c/gi_1"
+qloradb14a.wil.csc.local ORACLE_SID: "qdbsmt" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+qloradb16a.wil.csc.local ORACLE_SID: "qclsmt" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+
+[ora_drbubble1]
+us2-plorar01.wil.csc.local  ORACLE_SID: "pappsmt" GI_ORACLE_HOME: "/opt/app/19.11.0/grid" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+
+
+[ora_uat1]
+
+us1-ulorarac01a.wil.csc.local
+us1-ulorarac01d.wil.csc.local
+us1-ulorarac01e.wil.csc.local
+
+[ora_uat1:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_uat2]
+
+us1-ulorarac01c.wil.csc.local
+us1-ulorarac01f.wil.csc.local
+
+[ora_uat2:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_uat3]
+
+us1-ulorarac01b.wil.csc.local ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_uatsql]
+us1-ulorarac01a.wil.csc.local DB_NAME: "uappsmt" ORACLE_SID: "uappsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_1"
+us1-ulorarac01c.wil.csc.local DB_NAME: "udwmt" ORACLE_SID: "udwmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_1"
+us1-ulorarac01d.wil.csc.local DB_NAME: "uclsmt" ORACLE_SID: "uclsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_1"
+us1-ulorarac01e.wil.csc.local DB_NAME: "ussmt" ORACLE_SID: "ussmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+us1-ulorarac01f.wil.csc.local DB_NAME: "udbsmt" ORACLE_SID: "udbsmt2" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+[ora_uatsql:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"

@@ -1,0 +1,121 @@
+---
+- name: stop instance on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/inst_stop_{{ ansible_host }}_prepatch.sh"
+  register: stop_inst
+  ignore_errors: true
+  tags:
+    - inststop
+
+- name: display instance stop output from the current node
+  debug:
+    var: stop_inst.stdout_lines
+  tags:
+    - inststop
+
+#32933487;DB UPGRADE FROM 11.2.0.4 TO 19.11 IS SLOW ON DDL OF WRH$ TABLES
+- name: rollback 32933487 one-off patch from the database home
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch rollback -id 32933487 -silent
+  register: one_off_rollback
+  ignore_errors: true
+  tags:
+    - ruapply
+
+- name: display rollback 32933487 one-off patch from the database home
+  debug:
+    var: one_off_rollback.stdout_lines
+  tags:
+    - ruapply
+
+- name: install release update on the database home and grid home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";{{ GI_ORACLE_HOME }}/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME }},{{ GI_ORACLE_HOME}}
+  register: db_gi_ru_apply
+  tags:
+    - ruapply
+
+- name: display release update apply log on the database home and grid home
+  become_user: root
+  debug:
+    var: db_gi_ru_apply.stdout_lines
+  tags:
+    - ruapply
+
+- name: copy the database home and grid home patch apply log output to a file
+  become_user: root
+  copy:
+    content: "{{ db_gi_ru_apply.stdout }}"
+    dest: "{{ log_dir }}/db_gi_opatch_apply_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - ruapply
+
+- name: start instance on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/inst_start_{{ ansible_host }}_postpatch.sh"
+  register: start_inst
+  ignore_errors: true
+  tags:
+    - inststart
+
+- name: display start instance output from the current node
+  debug:
+    var: start_inst.stdout_lines
+  tags:
+    - inststart
+
+- name: Execute SQL Statement to get standby db status
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/standby_db_open.sh"
+  register: standby_db_stats
+  ignore_errors: true
+  tags:
+    - inststart
+
+- name: display standby db open status
+  debug:
+    var: standby_db_stats.stdout_lines
+  tags:
+    - inststart
+
+- name: copy the standby db open status output to a log file
+  copy:
+    content: "{{ standby_db_stats.stdout }}"
+    dest: "{{ log_dir }}/standby_db_open_mode_status_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - inststart
+
+- name: verify release update apply on the database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db_opatch_lsinv
+
+- name: display database home opatch lsinventory log
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+
+- name: copy the database home opatch lsinventory log to a file
+  copy:
+    content: "{{ db_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/db_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+
+- name: verify release update apply on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch lspatches
+  register: gi_opatch_lsinv
+
+- name: display grid infrastructure patch apply log
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+
+- name: copy the grid infrastructure patch apply log to a file
+  copy:
+    content: "{{ gi_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/gi_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

@@ -1,0 +1,99 @@
+
+[ora_prod1]
+
+us1-plorarac01a.wil.csc.local
+us1-plorarac01d.wil.csc.local
+us1-plorarac01h.wil.csc.local
+
+[ora_prod2]
+us1-plorarac01b.wil.csc.local
+us1-plorarac01e.wil.csc.local
+us1-plorarac01g.wil.csc.local
+
+[ora_prod3]
+us1-plorarac01c.wil.csc.local
+us1-plorarac01f.wil.csc.local
+
+[ora_prod1:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_prod2:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_prod3:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+# [ora_uat3]
+
+# us1-ulorarac01b.wil.csc.local ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_1" GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_prodsql]
+
+# only pappsmt1
+us1-plorarac01a.wil.csc.local DB_NAME: "pappsmt" ORACLE_SID: "pappsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# only pappsmt2
+us1-plorarac01b.wil.csc.local DB_NAME: "pappsmt" ORACLE_SID: "pappsmt2" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# pdwmt1 and pappsmt3
+us1-plorarac01c.wil.csc.local DB_NAME: "pdwmt" ORACLE_SID: "pdwmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# only pdwmt2
+us1-plorarac01d.wil.csc.local DB_NAME: "pdwmt" ORACLE_SID: "pdwmt2" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# pssmt1 and pclsmt1
+us1-plorarac01e.wil.csc.local DB_NAME: "pssmt" ORACLE_SID: "pssmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# pssmt2 and pclsmt2
+us1-plorarac01f.wil.csc.local DB_NAME: "pclsmt" ORACLE_SID: "pclsmt2" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1" ORACLE_HOME_2: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# only pdbsmt1 
+us1-plorarac01g.wil.csc.local DB_NAME: "pdbsmt" ORACLE_SID: "pdbsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+# only pdbsmt2
+us1-plorarac01h.wil.csc.local DB_NAME: "pdbsmt" ORACLE_SID: "pdbsmt2" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+
+[ora_prodsql:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+
+[ora_dr1]
+us2-plorarac01a.wil.csc.local
+us2-plorarac01d.wil.csc.local
+
+[ora_dr1:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+[ora_dr2]
+us2-plorarac01b.wil.csc.local
+us2-plorarac01c.wil.csc.local
+us2-plorarac01e.wil.csc.local
+
+[ora_dr2:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+
+[ora_drsql]
+us2-plorarac01a.wil.csc.local DB_NAME: "pappsmt" ORACLE_SID: "pappsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+us2-plorarac01b.wil.csc.local DB_NAME: "pdwmt" ORACLE_SID: "pdwmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+us2-plorarac01c.wil.csc.local DB_NAME: "pssmt" ORACLE_SID: "pssmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_3"
+us2-plorarac01d.wil.csc.local DB_NAME: "pclsmt" ORACLE_SID: "pclsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+us2-plorarac01e.wil.csc.local DB_NAME: "pdbsmt" ORACLE_SID: "pdbsmt1" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_2"
+
+
+[ora_drsql:vars]
+
+GI_ORACLE_HOME: "/opt/app/19.11.0/grid"
+
+
+
+[ora_drbubble1]
+us2-ploradr01.wil.csc.local  ORACLE_SID: "pappsmt" GI_ORACLE_HOME: "/opt/app/19.11.0/grid" ORACLE_HOME: "/opt/app/oracle/product/19.11.0.0/db_1"
+

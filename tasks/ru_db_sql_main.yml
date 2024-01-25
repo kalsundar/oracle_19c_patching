@@ -1,0 +1,8 @@
+---
+# the below list of tasks will complete release update database steps and complile invalid objects
+- include_tasks: compile_invalid_objects.yml
+- include_tasks: database_ru_post_installation.yml
+
+# the below task will validate database component status, ru apply status, database and service status
+- include_tasks: release_update_post_validation.yml
+- include_tasks: compile_invalid_objects.yml

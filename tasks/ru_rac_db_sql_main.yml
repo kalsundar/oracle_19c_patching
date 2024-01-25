@@ -1,0 +1,127 @@
+---
+# the below list of tasks will complete release update database steps and complile invalid objects
+- name: compile invalid objects on the database including pdb's
+  environment:
+    ORACLE_HOME: "{{ SID_ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ SID_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ SID_ORACLE_HOME}}/perl/bin/perl {{ SID_ORACLE_HOME }}/rdbms/admin/catcon.pl -n 5 -e -b utlrp -d {{ SID_ORACLE_HOME }}/rdbms/admin utlrp.sql"
+  ignore_errors: true
+  tags: compile
+
+- name: release update post installation on database
+  environment:
+    ORACLE_HOME: "{{ SID_ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ SID_ORACLE_HOME }}/OPatch:/usr/ccs/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: datapatch -verbose
+  register: datapatch
+  tags:
+    - datapatch
+
+- name: display datapatch output
+  debug:
+    var: datapatch.stdout_lines
+  tags:
+    - datapatch
+
+- name: copy the datapatch command output to a log file
+  copy:
+    content: "{{ datapatch.stdout }}"
+    dest: "{{ log_dir }}/datapatch_status_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - datapatch
+
+# the below task will validate database component status, ru apply status, database and service status
+- name: execute SQL Statement to get database component status
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_comp_status.sh"
+  register: db_component_post_ru_status
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display database component status output
+  debug:
+    var: db_component_post_ru_status.stdout_lines
+  tags:
+    - post_validation
+
+- name: copy the database component status output to a log file
+  copy:
+    content: "{{ db_component_post_ru_status.stdout }}"
+    dest: "{{ log_dir }}/db_component_status_{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: compare database component status pre and post patch
+  environment:
+    PATH: "{{ CL_GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w db_component_status_{{ ansible_host }}_postpatch.log db_component_status_{{ ansible_host }}_prepatch.log
+  register: db_comp_diff
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display database component status pre and post patch
+  debug:
+    var: db_comp_diff.stdout_lines
+  tags:
+    - post_validation
+
+- name: compare pdb open_mode status pre and post patch
+  environment:
+    PATH: "{{ CL_GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w pdb_open_status_{{ ansible_host }}_postpatch.log pdb_open_status_{{ ansible_host }}_prepatch.log
+  register: db_open_diff
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display pdb open_mode status pre and post patch
+  debug:
+    var: db_open_diff.stdout_lines
+  tags:
+    - post_validation
+
+- name: verify the SQL patch apply status at database level
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_sql_patch_status.sh"
+  register: db_ru_apply_status
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display db release update status output
+  debug:
+    var: db_ru_apply_status.stdout_lines
+  tags:
+    - post_validation
+
+- name: copy the db release update status output to a log file
+  copy:
+    content: "{{ db_ru_apply_status.stdout }}"
+    dest: "{{ log_dir }}/db_ru_apply_status_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: compile invalid objects on the database including pdb's
+  environment:
+    ORACLE_HOME: "{{ SID_ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ SID_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ SID_ORACLE_HOME}}/perl/bin/perl {{ SID_ORACLE_HOME }}/rdbms/admin/catcon.pl -n 5 -e -b utlrp -d {{ CL_ORACLE_HOME }}/rdbms/admin utlrp.sql"
+  ignore_errors: true
+  tags: compile

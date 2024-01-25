@@ -1,0 +1,25 @@
+---
+- name: release update post deinstallation on database
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ ORACLE_HOME }}/OPatch:/usr/ccs/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: datapatch -verbose
+  register: datapatch_rollback
+  tags:
+    - datapatch
+
+- name: display datapatch rollback output
+  debug:
+    var: datapatch_rollback.stdout_lines
+  tags:
+    - datapatch
+
+- name: copy the datapatch rollback command output to a log file
+  copy:
+    content: "{{ datapatch_rollback.stdout }}"
+    dest: "{{ rb_log_dir }}/datapatch_rollback_status_{{ ORACLE_SID }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - datapatch

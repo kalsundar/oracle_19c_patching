@@ -1,0 +1,4 @@
+---
+[ora_sand1:vars]
+GI_ORACLE_HOME=/opt/app/grid/19c/gi_1
+ORACLE_HOME=/opt/app/oracle/product/19c/db_2

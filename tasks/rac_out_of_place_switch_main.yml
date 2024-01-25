@@ -1,0 +1,192 @@
+---
+- name: modify database oracle home location to cloned home on the current node
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_modify_{{ ansible_host }}.sh"
+  register: db_modify
+  ignore_errors: true
+  tags:
+    - db_modify
+  failed_when: db_modify.rc not in [ 0, 1 ]
+
+- name: display modify database oracle home location status
+  debug:
+    var: db_modify.stdout_lines
+  tags:
+    - db_modify
+
+- name: replace oracle home entry with cloned home in /etc/oratab file
+  become_user: root
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.replace:
+    path: /etc/oratab
+    regexp: "{{ ORA_HOME }}"
+    replace: "{{ CL_ORACLE_HOME }}"
+    validate: /usr/bin/cat /etc/oratab %s
+  register: oratab
+  ignore_errors: true
+  tags:
+    - db_modify
+
+- name: replace oracle home 2 entry with cloned home in /etc/oratab file
+  become_user: root
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.replace:
+    path: /etc/oratab
+    regexp: "{{ ORA_HOME_2 }}"
+    replace: "{{ CL_ORACLE_HOME_2 }}"
+    validate: /usr/bin/cat /etc/oratab %s
+  register: oratab
+  ignore_errors: true
+  tags:
+    - db_modify
+
+- name: display /etc/oratab file
+  become_user: root
+  debug:
+    var: oratab.stdout_lines
+  tags:
+    - db_modify
+
+# - name: rollback one-off patch on the database home
+#   ansible.builtin.shell:
+#     cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch nrollback -id 33375194,32355765,32042352,23125587,17777718,31424070,32933487 -oh {{ FIN_ORACLE_HOME }} -silent
+#   register: rb_db_one_off
+#   ignore_errors: true
+#   tags:
+#     - rb_oneoff
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: display database home one-off patch rollback log
+#   debug:
+#     var: rb_db_one_off.stdout_lines
+#   tags:
+#     - rb_oneoff
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: install release update on the database home
+#   become_user: root
+#   ansible.builtin.shell:
+#     cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ FIN_ORACLE_HOME }} -force_conflict
+#   register: opatch_apply
+#   tags:
+#     - ruapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: display database home patch apply log
+#   become_user: root
+#   debug:
+#     var: opatch_apply.stdout_lines
+#   tags:
+#     - ruapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: copy the database home patch apply log to a file
+#   become_user: root
+#   copy:
+#     content: "{{ opatch_apply.stdout }}"
+#     dest: "{{ log_dir }}/db_opatch_apply_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+#   ignore_errors: true
+#   tags:
+#     - ruapply
+#   when:
+#     ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+#     # - inventory_hostname is "us1-ulorarac01e.wil.csc.local"
+#     # - inventory_hostname is "us1-ulorarac01f.wil.csc.local"
+
+# - name: install ojvm patch on the database home
+#   ansible.builtin.shell:
+#     cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch apply {{ patch_local_dir }}/{{ ojvm_patch_id }} -oh {{ FIN_ORACLE_HOME }} -silent
+#   register: db_ojvmpatch_apply
+#   tags:
+#     - ojvmapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: display database home ojvm patch apply log
+#   debug:
+#     var: db_ojvmpatch_apply.stdout_lines
+#   tags:
+#     - ojvmapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: copy the database home ojvm patch apply log to a file
+#   copy:
+#     content: "{{ db_ojvmpatch_apply.stdout }}"
+#     dest: "{{ log_dir }}/db_ojvm_patch_apply_{{ ansible_hostname }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+#   tags:
+#     - ojvmapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: install one-off patch on the database home
+#   ansible.builtin.shell:
+#     cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";cd {{ patch_dir }}/one-off;$ORACLE_HOME/OPatch/opatch napply -id 35037877,35119957 -oh {{ FIN_ORACLE_HOME }} -silent
+#   register: db_one_off_apply
+#   tags:
+#     - oneoffapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: display database home one-off patch apply log
+#   debug:
+#     var: db_one_off_apply.stdout_lines
+#   tags:
+#     - oneoffapply
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: verify release update apply on the database home
+#   ansible.builtin.shell:
+#     cmd: export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+#   ignore_errors: true
+#   register: db_opatch_lsinv
+#   tags:
+#     - ruverify
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+# - name: display fin database home opatch log
+#   debug:
+#     var: db_opatch_lsinv.stdout_lines
+#   tags:
+#     - ruverify
+#   when: ( ansible_facts.hostname == "us1-ulorarac01e" or ansible_facts.hostname == "us1-ulorarac01f")
+
+- name: switch grid infrastructure resources to cloned home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply -switch-clone -oh {{ GI_ORACLE_HOME }}
+  register: opatch_switch
+  throttle: 1
+  tags:
+    - oop_switch
+
+- name: display switch grid infrastructure resources to cloned home status
+  become_user: root
+  debug:
+    var: opatch_switch.stdout_lines
+  tags:
+    - oop_switch
+
+- name: copy the grid infrastructure and database home patch apply log to a file
+  become_user: root
+  copy:
+    content: "{{ opatch_switch.stdout }}"
+    dest: "{{ log_dir }}/gi_opatch_switch_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - oop_switch
+
+- name: verify release update version on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ CL_GI_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  ignore_errors: true
+  register: gi_opatch_lsinv
+  tags:
+    - oop_switch_verify
+
+- name: display grid infrastructure opatch lspatches output
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+  tags:
+    - oop_switch_verify

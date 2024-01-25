@@ -1,0 +1,75 @@
+---
+- name: deinstall release update on the database and grid home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";{{ GI_ORACLE_HOME }}/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME }},{{ ORACLE_HOME_2}},{{ GI_ORACLE_HOME}}
+  register: db_gi_ru_rollback
+  tags:
+    - rurollback
+
+- name: display database and grid home release update rollback log
+  become_user: root
+  debug:
+    var: db_gi_ru_rollback.stdout_lines
+  tags:
+    - rurollback
+
+- name: copy the database and grid home release update rollback log to a file
+  become_user: root
+  copy:
+    content: "{{ db_gi_ru_rollback.stdout }}"
+    dest: "{{ rb_log_dir }}/db_gi_opatch_rollback_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rurollback
+# - name: deinstall release update on the database home 1
+#   become_user: root
+#   ansible.builtin.shell:
+#     cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME }}
+#   register: db_opatch_rollback
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback
+
+# - name: display database home patch rollback log
+#   become_user: root
+#   debug:
+#     var: db_opatch_rollback.stdout_lines
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback
+
+# - name: copy the database home patch rollback log to a file
+#   become_user: root
+#   copy:
+#     content: "{{ db_opatch_rollback.stdout }}"
+#     dest: "{{ rb_log_dir }}/db_opatch_rollback_1_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback
+
+# - name: deinstall release update on the database home 2
+#   become_user: root
+#   ansible.builtin.shell:
+#     cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME_2 }}
+#   register: db2_opatch_rollback
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback
+
+# - name: display database home patch apply log
+#   become_user: root
+#   debug:
+#     var: db2_opatch_rollback.stdout_lines
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback
+
+# - name: copy the database home patch apply log to a file
+#   become_user: root
+#   copy:
+#     content: "{{ db2_opatch_rollback.stdout }}"
+#     dest: "{{ rb_log_dir }}/db2_opatch_rollback_2_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+#   tags:
+#     - dbrollback
+#     - gi_dbrollback

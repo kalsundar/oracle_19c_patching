@@ -1,0 +1,33 @@
+---
+- name: create directory structure to install or rollback patch
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/{{ item }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+  loop:
+    - orahomebackup
+    - ru_apply_log
+    - ru_rollback_log
+    - scripts
+    - one-off
+  run_once: true
+
+- name: Copy files to install or rollback patch
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: "{{ script_loc }}"
+    owner: oracle
+    group: dba
+    mode: 0777
+  loop:
+    - datapatch.sh
+    - db_stopstart_svc_stat.sh
+    - open_all_pdb.sh
+    - pdb_open_status.sh
+    - startup_upgrade.sh
+    - compile_invalid_obj.sh
+    - db_comp_status.sh
+    - db_sql_patch_status.sh
+  run_once: true

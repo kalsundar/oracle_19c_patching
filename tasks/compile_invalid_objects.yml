@@ -1,0 +1,16 @@
+---
+- name: compile invalid object in the database including pdb's
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/compile_invalid_obj.sh"
+  register: compile_invalid
+  ignore_errors: true
+  tags:
+    - compile_invalid
+
+- name: display compile invalid object log
+  debug:
+    var: compile_invalid.stdout_lines
+  tags:
+    - compile_invalid

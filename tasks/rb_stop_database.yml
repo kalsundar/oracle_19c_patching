@@ -1,0 +1,18 @@
+---
+- name: stop database and related service on the current node to rollback patch
+  environment:
+     ORACLE_HOME: "{{ ORACLE_HOME }}"
+     ORACLE_SID: "{{ ORACLE_SID }}"
+     PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: srvctl stop database -d {{ ORACLE_SID }};srvctl status database -d {{ ORACLE_SID }}
+  register: rb_db_status
+
+- name: display database status
+  debug:
+    var: rb_db_status.stdout_lines
+
+- name: copy the database status log to a file
+  copy:
+    content: "{{ rb_db_status.stdout }}"
+    dest: "{{ rb_log_dir }}/db_stopped_on_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

@@ -1,0 +1,42 @@
+---
+- name: create directory structure to install or rollback patch
+  ansible.builtin.file:
+    path: "{{ patch_dir }}/{{ item }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+  loop:
+    - orahomebackup
+    - ru_apply_log
+    - ru_rollback_log
+    - scripts
+    - one-off
+  tags:
+    - dir_create
+  run_once: true
+
+- name: Copy files to install or rollback patch
+  ansible.builtin.copy:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: "{{ script_loc }}"
+    owner: oracle
+    group: dba
+    mode: 0775
+  loop:
+    - standby_db_stopstart.sh
+    - standby_db_status.sh
+    - standby_db_open.sh
+  tags:
+    - dir_create
+  run_once: true
+
+- name: generate shell script to stop and start standby database
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc}}/standby_db_stopstart.sh {{ script_loc}}"
+  ignore_errors: true
+  tags:
+    - dir_create
+  run_once: true

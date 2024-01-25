@@ -1,0 +1,32 @@
+---
+- name: Execute SQL Statement to get db component status
+  environment:
+     ORACLE_HOME: "{{ ORACLE_HOME }}"
+     ORACLE_SID: "{{ ORACLE_SID }}"
+     PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: |
+      sqlplus -S /nolog <<EOF
+      conn / as sysdba
+      set feedback off
+      SET SERVEROUTPUT ON SIZE 5000;
+      SET LINESIZE 200;
+      set pagesize 2000;
+      set long 500;
+      col comp_name for a35
+      col status for a15
+      col version for a15
+      select instance_name,host_name from v\$instance;
+      show pdbs;
+      select con_id,comp_name,version,status from cdb_registry order by con_id;
+      EOF
+  register: db_component_status
+
+- name: display db component status output
+  debug:
+    var: db_component_status.stdout_lines
+
+- name: copy the db component status output to a log file
+  copy:
+    content: "{{ db_component_status.stdout }}"
+    dest: "{{ log_dir }}/db_comp_status_{{ ORACLE_SID }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

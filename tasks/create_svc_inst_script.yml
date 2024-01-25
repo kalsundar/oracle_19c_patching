@@ -1,0 +1,21 @@
+---
+- name: create service relocate shell script
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script}}/racsvcrelocate.sh {{ rac_script}}"
+  ignore_errors: true
+
+- name: create service status verify shell script
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script}}/racsvcverify.sh {{ rac_script}}"
+  ignore_errors: true
+
+- name: create instance stop and start shell script
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script}}/racinststopstart.sh {{ rac_script}}"
+  ignore_errors: true

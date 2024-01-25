@@ -1,0 +1,17 @@
+---
+- name: verify database and related service status
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: srvctl status service -d {{ ORACLE_SID }};srvctl status database -d {{ ORACLE_SID }}
+  register: db_and_service_status
+  ignore_errors: true
+
+- name: display database and related service status
+  debug:
+    var: db_and_service_status.stdout_lines
+
+- name: copy the database and related service status log to a file
+  copy:
+    content: "{{ db_and_service_status.stdout }}"
+    dest: "{{ log_dir }}/db_and_service_status_{{ ansible_host }}_precheck_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

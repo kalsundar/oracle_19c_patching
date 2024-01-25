@@ -1,0 +1,28 @@
+---
+- name: verify release update apply on the database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch lsinventory
+  register: db_opatch_lsinv
+
+- name: display database home opatch lsinventory log
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+
+- name: copy the database home opatch lsinventory log to a file
+  copy:
+    content: "{{ db_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/db_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+
+- name: verify release update apply on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch lsinventory 
+  register: gi_opatch_lsinv
+
+- name: display grid infrastructure patch apply log
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+
+- name: copy the grid infrastructure patch apply log to a file
+  copy:
+    content: "{{ gi_opatch_lsinv.stdout }}"
+    dest: "{{ log_dir }}/gi_opatch_lsinv_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

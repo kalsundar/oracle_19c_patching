@@ -1,0 +1,145 @@
+ORA_SID=`grep "^[+]" /etc/oratab |  awk -F ":" {'print $1'}`
+ORA_HOME=`grep "^[+]" /etc/oratab |  awk -F ":" {'print $2'}`
+export ORACLE_SID=$ORA_SID
+export ORACLE_HOME=$ORA_HOME
+export PATH=$PATH:$ORACLE_HOME/bin
+
+if [ -z "${ORACLE_SID}" ]
+then
+   printf "     !!!ORACLE_SID env not set!!!\n"
+else
+
+FILE1=/tmp/stopsvrc.txt
+>$FILE1
+FILE2=/tmp/prefsvrc.txt
+>$FILE2
+FILE3=/tmp/avaisvrc.txt
+>$FILE3
+FILE4=/tmp/normsvrc.txt
+>$FILE4
+FILE5=/tmp/nodelist.txt
+>$FILE5
+FILE6=/tmp/nodeinslist.txt
+>$FILE6
+FILE7=/tmp/nodeinslist1.txt
+>$FILE7
+FILE8=/tmp/instlist.txt
+>$FILE8
+FILE9=/tmp/servicelist.txt
+>$FILE9
+FILE10=/tmp/avaipref.txt
+>$FILE10
+FILE11=/tmp/availist.txt
+>$FILE11
+FILE12=/tmp/preflist.txt
+>$FILE12
+
+scriptdir=$1
+
+[[ -d ${scriptdir} ]] || mkdir ${scriptdir};
+for dbms in `srvctl config database`;
+do
+srvctl status database -d $dbms|cut -d ' ' -f 7 > $FILE5
+for instclistNode in `cat $FILE5`
+do
+>${scriptdir}/svc_relocate_${instclistNode}.wil.csc.local_prepatch.sh
+>${scriptdir}/svc_relocate_${instclistNode}.wil.csc.local_postpatch.sh
+done
+done
+
+for dbms in `srvctl config database`;
+do
+srvctl status database -d $dbms > $FILE6
+cat $FILE6 | awk -F " "  '{print $2 "=" $7}' > $FILE7
+srvctl status database -d $dbms|cut -d ' ' -f 7 > $FILE5
+NODECOUNT=`wc -l $FILE5`
+srvctl status database -d $dbms|cut -d ' ' -f 2 > $FILE8
+INSTANCECOUNT=`wc -l $FILE8`
+srvctl status service -d ${dbms} > $FILE9
+
+while read -r SERVICEDETAILS
+do
+SERVICENAME=`echo $SERVICEDETAILS | /usr/bin/awk -F " " '{print $2}'`
+CURINSTNAME=`echo $SERVICEDETAILS | /usr/bin/awk -F " " '{print $7}'`
+
+srvctl config service -d ${dbms} -s ${SERVICENAME} > $FILE10
+cat $FILE10 | grep Available | awk -F ":" '{print $2}' | sed -e 's/^[ \t]*//' | sed -e '/^$/d' | tr ',' '\n' > $FILE11
+cat $FILE10 | grep Preferred | awk -F ":" '{print $2}' | sed -e 's/^[ \t]*//' | sed -e '/^$/d' | tr ',' '\n' > $FILE12
+AVAICOUNT=`cat $FILE11 | wc -l`
+PREFCOUNT=`cat $FILE12 | wc -l`
+
+function createfilestopsvc()
+{
+for INST in `cat $FILE8`
+do
+DBNODE=`grep ${INST} $FILE7 | cut -d "=" -f2`
+echo "srvctl stop service -db ${dbms} -service ${SERVICENAME} -instance ${INST}" >> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_prepatch.sh
+done
+}
+
+function createfileforcestopsvc()
+{
+DBNODE=`grep ${CURINSTNAME} $FILE7 | cut -d "=" -f2`
+echo "srvctl stop service -db ${dbms} -service ${SERVICENAME} -instance ${CURINSTNAME}" >> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_prepatch.sh
+}
+
+function createfilerelocsvc()
+{
+DBNODE=`grep ${CURINSTNAME} $FILE7 | cut -d "=" -f2`
+AVAILINST=`cat $FILE11`
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${CURINSTNAME} -newinst ${AVAILINST}">> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_prepatch.sh
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${AVAILINST} -newinst ${CURINSTNAME}">>  ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_postpatch.sh
+}
+
+function createfileprefsvc()
+{
+for CURINSMULTI in `cat $FILE12`
+do
+DBNODE=`grep ${CURINSMULTI} $FILE7 | cut -d "=" -f2`
+AVAILINST=`cat $FILE11`
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${CURINSMULTI} -newinst ${AVAILINST}">> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_prepatch.sh
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${AVAILINST} -newinst ${CURINSMULTI}">> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_postpatch.sh
+done
+}
+
+function createfileavaisvc()
+{
+DBNODE=`grep ${CURINSTNAME} $FILE7 | cut -d "=" -f2`
+AVAILINST=`cat $FILE11 | tail -n1`
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${CURINSTNAME} -newinst ${AVAILINST}">> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_prepatch.sh
+echo "srvctl relocate service -db ${dbms} -s ${SERVICENAME} -oldinst ${AVAILINST} -newinst ${CURINSTNAME}">> ${scriptdir}/svc_relocate_${DBNODE}.wil.csc.local_postpatch.sh
+}
+
+####Conditions validation
+if [[ $AVAICOUNT -eq 0 && $PREFCOUNT -gt 1 ]]; then #Available count is zero and Preferred count is more than one
+   createfilestopsvc
+elif [[ $AVAICOUNT -eq 0 && $PREFCOUNT -eq 1 ]]; then #Available count is zero and Preferred count is one
+   createfileforcestopsvc
+elif [[ $AVAICOUNT -eq 1 && $PREFCOUNT -eq 1 ]]; then #Available count is one and Preferred count is one
+   createfilerelocsvc
+elif [[ $PREFCOUNT -gt 1 && $AVAICOUNT -eq 1 ]]; then #Preferred count is more than one and Available count is one
+   createfileprefsvc
+elif [[ $PREFCOUNT -eq 1 && $AVAICOUNT -gt 1 ]]; then #Preferred count is one and Available count is more than one
+   createfileavaisvc
+else
+       echo "========================================"
+       echo "${SERVICENAME} not meeting any Condition"
+       echo "========================================"
+fi
+done < $FILE9
+
+done
+fi
+
+rm $FILE1
+rm $FILE2
+rm $FILE3
+rm $FILE4
+rm $FILE5
+rm $FILE6
+rm $FILE7
+rm $FILE8
+rm $FILE9
+rm $FILE10
+rm $FILE11
+rm $FILE12

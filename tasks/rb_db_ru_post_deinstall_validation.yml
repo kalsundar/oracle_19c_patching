@@ -1,0 +1,103 @@
+---
+- name: verify the database component status post patch rollback at database level
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: |
+      sqlplus -S /nolog <<EOF
+      conn / as sysdba
+      set feedback off
+      SET SERVEROUTPUT ON SIZE 5000;
+      SET LINESIZE 200;
+      set pagesize 2000;
+      set long 500;
+      col comp_name for a35
+      col status for a15
+      col version for a15
+      select instance_name,host_name from v\$instance;
+      show pdbs;
+      select con_id,comp_name,version,status from cdb_registry order by con_id;
+      EOF
+  register: db_comp_post_ru_rollback_status
+  tags:
+    - rollback_validation
+
+- name: display db component post ru rollback status output
+  debug:
+    var: db_comp_post_ru_rollback_status.stdout_lines
+  tags:
+    - rollback_validation
+
+- name: copy the db component post ru rollback status output to a log file
+  copy:
+    content: "{{ db_comp_post_ru_rollback_status.stdout }}"
+    dest: "{{ rb_log_dir }}/db_comp_post_ru_rollback_status_{{ DB_NAME }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_validation
+
+- name: verify the patch rollback status at database level
+  environment:
+    ORACLE_HOME: "{{ ORACLE_HOME }}"
+    ORACLE_SID: "{{ ORACLE_SID }}"
+    PATH: "{{ ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: |
+      sqlplus -S /nolog <<EOF
+      conn / as sysdba
+      set feedback off
+      SET SERVEROUTPUT ON SIZE 5000;
+      SET LINESIZE 200;
+      set pagesize 2000;
+      col version for a15
+      col action_time for a30
+      col action for a10
+      col status for a15
+      col bundle_series for a10
+      col description for a65
+      select instance_name,host_name from v\$instance;
+      select con_id,patch_id,source_version,target_version,status,action,action_time,target_build_description,description from cdb_registry_sqlpatch order by con_id,action_time;
+      EOF
+  register: db_ru_rollback_status
+  tags:
+    - rollback_validation
+
+- name: display db release update rollback status output
+  debug:
+    var: db_ru_rollback_status.stdout_lines
+  tags:
+    - rollback_validation
+
+- name: copy the db release update rollback status output to a log file
+  copy:
+    content: "{{ db_ru_rollback_status.stdout }}"
+    dest: "{{ rb_log_dir }}/db_ru_rollback_status_{{ DB_NAME }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_validation
+
+# to validate database and related services status
+- name: verify database and related service status on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: srvctl status service -d {{ DB_NAME }};srvctl status database -d {{ DB_NAME }}
+  register: post_ru_rollback_db_svc_status
+  tags:
+    - rollback_validation
+
+- name: display database and related service status
+  debug:
+    var: post_ru_rollback_db_svc_status.stdout_lines
+  tags:
+    - rollback_validation
+
+- name: copy the database and related service status log to a file
+  copy:
+    content: "{{ post_ru_rollback_db_svc_status.stdout }}"
+    dest: "{{ rb_log_dir }}/post_ru_rollback_db_svc_status_{{ DB_NAME }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - rollback_validation

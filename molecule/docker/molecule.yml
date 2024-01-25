@@ -1,0 +1,40 @@
+---
+dependency:
+  name: galaxy
+  options:
+    force: true
+    role-file: roles/requirements.yml
+    roles-path: roles
+driver:
+  name: docker
+lint:
+  name: yamllint
+  enabled: true
+platforms:
+  # if mulitple docker instances - update create.yml until etc_hosts is supported
+  - name: centos7-hashicorpva
+    image: centos/systemd
+    privileged: true
+    command: '/usr/sbin/init'
+provisioner:
+  name: ansible
+  options:
+    vvv: false
+    vault-password-file: ../../test/.vault_pass
+  lint:
+    name: ansible-lint
+    enabled: true
+scenario:
+  name: docker
+verifier:
+  name: testinfra
+  options:
+    v: true
+    s: true
+    junit-xml: ../../target/test-reports/testinfra-docker-junit.xml
+    junit-prefix: docker
+  directory: ../../test/integration/testinfra
+  lint:
+    name: flake8
+    options:
+      ignore: E501

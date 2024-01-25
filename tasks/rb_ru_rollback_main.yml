@@ -1,0 +1,11 @@
+---
+# The below list of tasks to stop the database, rollback database and grid home release update patch
+# and start the database to perform post deinstallation steps
+- include_tasks: rb_stop_database.yml
+- include_tasks: rb_db_home_release_update_rollback.yml
+- include_tasks: rb_gi_home_release_update_rollback.yml
+- include_tasks: rb_verify_opatch_rollback_status.yml
+- include_tasks: rb_start_database.yml
+- include_tasks: rb_db_ru_post_deinstallation.yml
+- include_tasks: compile_invalid_objects.yml
+- include_tasks: rb_db_ru_post_deinstall_validation.yml

@@ -1,0 +1,96 @@
+---
+- name: clone the current database home and install release update
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -prepare-clone -oh {{ ORACLE_HOME }} -silent {{ script_loc }}/rac_db1_clone.properties -force_conflict
+  register: db_oop_clone1
+  tags:
+    - db_oop_clone
+
+- name: display database home clone session log
+  become_user: root
+  debug:
+    var: db_oop_clone1.stdout_lines
+  tags:
+    - db_oop_clone
+
+- name: clone the current database home 2 and install release update
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -prepare-clone -oh {{ ORACLE_HOME_2 }} -silent {{ script_loc }}/rac_db2_clone.properties -force_conflict
+  register: db_oop_clone
+  tags:
+    - db_oop_clone2
+  # when:
+  #   - inventory_hostname != us1-plorarac01i.wil.csc.local
+  #   - inventory_hostname != us1-plorarac01j.wil.csc.local
+
+- name: display database home clone session log
+  become_user: root
+  debug:
+    var: db_oop_clone.stdout_lines
+  tags:
+    - db_oop_clone2
+  # when:
+  #   - inventory_hostname != us1-plorarac01i.wil.csc.local
+  #   - inventory_hostname != us1-plorarac01j.wil.csc.local
+
+- name: copy database home clone session log to a file
+  become_user: root
+  copy:
+    content: "{{ db_oop_clone.stdout }}"
+    dest: "{{ log_dir }}/db_oop_clone_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - db_oop_clone2
+  # when:
+  #   - inventory_hostname != us1-plorarac01i.wil.csc.local
+  #   - inventory_hostname != us1-plorarac01j.wil.csc.local
+
+# - name: install ojvm patch on the database home
+#   ansible.builtin.shell:
+#     cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ CL_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch apply {{ patch_local_dir }}/{{ ojvm_patch_id }} -oh {{ CL_ORACLE_HOME }} -silent
+#   register: db_ojvmpatch_apply
+#   tags:
+#     - ojvmapply
+
+# - name: display database home ojvm patch apply log
+#   debug:
+#     var: db_ojvmpatch_apply.stdout_lines
+#   tags:
+#     - ojvmapply
+
+# - name: install ojvm patch on the database home 2
+#   ansible.builtin.shell:
+#     cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ CL_ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch apply {{ patch_local_dir }}/{{ ojvm_patch_id }} -oh {{ CL_ORACLE_HOME_2 }} -silent
+#   register: db_ojvmpatch_apply2
+#   tags:
+#     - ojvmapply2
+
+# - name: display database home 2 ojvm patch apply log
+#   debug:
+#     var: db_ojvmpatch_apply2.stdout_lines
+#   tags:
+#     - ojvmapply2
+
+- name: verify release update on the cloned database home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ CL_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db_opatch_lsinv
+  ignore_errors: true
+
+- name: display list of patch installed on the cloned database home
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+  ignore_errors: true
+
+- name: verify release update on the cloned database home 2
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ CL_ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db_opatch_lsinv2
+  ignore_errors: true
+
+- name: display list of patch installed on the cloned database home 2
+  debug:
+    var: db_opatch_lsinv2.stdout_lines
+  ignore_errors: true

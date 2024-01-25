@@ -1,0 +1,8 @@
+---
+collections:
+  - name: awx.awx
+  - name: redhat_cop.controller_configuration
+  - name: ansible.posix
+  - name: community.general
+    version: 8.2.0
+...

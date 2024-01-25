@@ -1,0 +1,38 @@
+# variables to apply oracle release update 19.21 to apply on the current 19.20 relase update.
+log_dir: "/orautl/SOFTWARE/19cSoftware/19.21.PatchSet/ru_apply_log"
+rb_log_dir: "/orautl/SOFTWARE/19cSoftware/19.21.PatchSet/ru_rollback_log"
+patch_dir: "/orautl/SOFTWARE/19cSoftware/19.21.PatchSet"
+patch_local_dir: "/opt/app/oracle/patches"
+patch_temp_dir: "{{patch_local_dir}}/tmp"
+current_version: 1920
+gi_patch_id: 35642822
+db_patch_id: 35643107
+rac_script: "{{patch_dir}}/scripts"
+script_loc: "{{patch_dir}}/scripts"
+ORACLE_HOME: "/opt/app/oracle/product/19.20.0/db_1"
+ORACLE_HOME_2: "/opt/app/oracle/product/19.20.0/db_2"
+FIN_ORACLE_HOME: "/opt/app/oracle/product/fin19c/db_1"
+GI_ORACLE_HOME: "/opt/app/grid/19.20.0/gi_1"
+# GI_ORACLE_HOME: "/opt/app/19.20.0/grid/gi_1"
+# CL_ORACLE_HOME: "/opt/app/oracle/product/19.20.0/db_1"
+# CL_ORACLE_HOME_2: "/opt/app/oracle/product/19.20.0/db_2"
+# CL_GI_ORACLE_HOME: "/opt/app/19.20.0/grid/gi_1"
+# CL_GI_ORACLE_HOME: "/opt/app/grid/19.20.0/gi_1"
+# ORA_HOME: "/opt/app/oracle/product/19.19.0/db_1"
+# ORA_HOME_2: "/opt/app/oracle/product/19.19.0/db_2"
+# host_group: ora_sand1:ora_sand2:uat_sb1:ora_dr1:ora_dr2:ora_dev:ora_qa
+# patch_id_1: 35042068
+# patch_id_2: 35050331
+# patch_id_3: 35050325
+# patch_id_4: 35107512
+# patch_id_5: 33575402
+# ojvm_patch_id: 35050341
+# DB_NAME: "{{ ORACLE_SID }}"
+# oracle_home_2: "{{ ORACLE_HOME}}"
+# CL_GI_ORACLE_HOME: "/opt/app/grid/19.19.0/gi_1"
+# CL_GI_ORACLE_HOME: "/opt/app/19.19.0/grid/gi_1"
+# CL_ORACLE_HOME: "/opt/app/oracle/product/19.19/db_1"
+# CL_ORACLE_HOME_2: "/opt/app/oracle/product/19.19/db_2"
+# ORA_HOME: "/opt/app/oracle/product/19c/db_1"
+# CL_GI_ORACLE_HOME: "/opt/app/grid/19.19.0/gi_1"
+

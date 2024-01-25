@@ -1,0 +1,26 @@
+---
+- name: install release update on the grid infrastructure home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ GI_ORACLE_HOME }}
+  register: gi_opatch_apply
+  tags:
+    - giapply
+    - gi_dbapply
+
+- name: display grid infrastructure patch apply log
+  become_user: root
+  debug:
+    var: gi_opatch_apply.stdout_lines
+  tags:
+    - giapply
+    - gi_dbapply
+
+- name: copy the grid infrastructure patch apply log to a file
+  become_user: root
+  copy:
+    content: "{{ gi_opatch_apply.stdout }}"
+    dest: "{{ log_dir }}/gi_opatch_apply_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - giapply
+    - gi_dbapply

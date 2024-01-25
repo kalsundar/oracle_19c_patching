@@ -1,0 +1,8 @@
+---
+# The below list of tasks to stop the instance, rollback database and grid home release update patch
+# and start the instance to perform post deinstallation steps
+- include_tasks: rb_rac_svc_relocate_stop_instance.yml
+- include_tasks: rb_rac_db_home_release_update_rollback.yml
+# - include_tasks: rb_gi_home_release_update_rollback.yml
+- include_tasks: rb_rac_verify_opatch_rollback_status.yml
+- include_tasks: rb_rac_start_inst_svc_relocate.yml

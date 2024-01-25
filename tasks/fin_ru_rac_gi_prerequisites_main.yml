@@ -1,0 +1,77 @@
+---
+# the below list of tasks to complete copy release update patch and verify conflict
+
+- name: remove local directory to cleanup older patch files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: absent
+  tags:
+    - rm_dir
+
+- name: create local directory to copy release update files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+  tags:
+    - dir_create
+
+- name: create temporary directory to create temp files during the patch process
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}/tmp"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0777
+  tags:
+    - dir_create
+
+- name: upgrade grid infrastructure home OPatch utility
+  become_user: root
+  ansible.builtin.shell:
+    cmd: mv {{ GI_ORACLE_HOME }}/OPatch {{ GI_ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{GI_ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip; chown -R oracle:dba {{ GI_ORACLE_HOME }}/OPatch
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: Verify grid infrastructure OPatch utility version
+  ansible.builtin.shell:
+    cmd: "{{ GI_ORACLE_HOME }}/OPatch/opatch version"
+  register: gi_opatch_version
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: display grid infrastructure OPatch utility version
+  debug:
+    var: gi_opatch_version.stdout_lines
+  tags:
+    - opatch_upgrade
+
+- name: copy release update to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ gi_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+  tags:
+    - file_copy
+
+- name: verify grid infrastructure patch conflict
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";export PATH=$ORACLE_HOME/OPatch:/usr/ccs/bin:$PATH;opatchauto apply {{ patch_local_dir }}/{{gi_patch_id}} -oh {{GI_ORACLE_HOME}} -analyze
+  register: patch_conflict_status
+  tags:
+    - patch_conflict
+
+- name: display grid infrastructure patch conflict output
+  become_user: root
+  debug:
+    var: patch_conflict_status.stdout_lines
+  tags:
+    - patch_conflict

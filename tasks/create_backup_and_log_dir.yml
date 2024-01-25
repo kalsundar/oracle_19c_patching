@@ -1,0 +1,91 @@
+---
+- debug:
+    var: ansible_facts
+# - name: create backup location
+#   ansible.builtin.file:
+#     path: "{{ patch_dir }}/orahomebackup"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: create release update installation log file directory
+#   ansible.builtin.file:
+#     path: "{{ patch_dir }}/ru_apply_log"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: create release update deinstallation log file directory
+#   ansible.builtin.file:
+#     path: "{{ patch_dir }}/ru_rollback_log"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: create rac svc relocate and instance start and stop script file directory
+#   ansible.builtin.file:
+#     path: "{{ patch_dir }}/scripts"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: create local directory to copy release update files
+#   ansible.builtin.file:
+#     path: "{{ patch_local_dir }}"
+#     state: directory
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+
+# - name: Copy Shell scripts to generate open_all_pdb.sh
+#   template:
+#     src: "{{ role_path }}/templates/open_all_pdb.sh.j2"
+#     dest: "{{ rac_script }}"
+#     remote_src: false
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+#     force: true
+
+# - name: Copy Shell scripts to generate pdb_open_status.sh
+#   template:
+#     src: "{{ role_path }}/templates/pdb_open_status.sh.j2"
+#     dest: "{{ rac_script }}"
+#     # remote_src: false
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+#     force: true
+
+# - name: Copy Shell scripts to generate racinststopstart.sh
+#   template:
+#     src: "{{ role_path }}/templates/racinststopstart.sh.j2"
+#     dest: "{{ rac_script }}"
+#     # remote_src: false
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+#     force: true
+
+# - name: Copy Shell scripts to generate racsvcrelocate.sh
+#   template:
+#     src: "{{ role_path }}/templates/racsvcrelocate.sh.j2"
+#     dest: "{{ rac_script }}"
+#     # remote_src: false
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+#     force: true
+
+# - name: Copy Shell scripts to generate racsvcverify.sh
+#   template:
+#     src: "{{ role_path }}/templates/racsvcverify.sh.j2"
+#     dest: "{{ rac_script }}"
+#     owner: oracle
+#     group: dba
+#     mode: 0775
+#     force: true

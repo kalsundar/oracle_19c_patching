@@ -1,0 +1,66 @@
+---
+- name: install release update on the database home and grid home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";{{ GI_ORACLE_HOME }}/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME }},{{ ORACLE_HOME_2}},{{ GI_ORACLE_HOME}}
+  register: db_gi_ru_apply
+  tags:
+    - ruapply
+
+- name: display release update apply log on the database home and grid home
+  become_user: root
+  debug:
+    var: db_gi_ru_apply.stdout_lines
+  tags:
+    - ruapply
+
+- name: copy the database home and grid home patch apply log output to a file
+  become_user: root
+  copy:
+    content: "{{ db_gi_ru_apply.stdout }}"
+    dest: "{{ log_dir }}/db_gi_opatch_apply_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - ruapply
+
+- name: verify release update apply on the database home 1
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db_opatch_lsinv
+  ignore_errors: true
+  tags:
+    - ruverify
+
+- name: display database home opatch lspatches log
+  debug:
+    var: db_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify
+
+- name: verify release update apply on the database home 2
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME_2 }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: db2_opatch_lsinv
+  ignore_errors: true
+  tags:
+    - ruverify
+
+- name: display database home 2 opatch lspatches log
+  debug:
+    var: db2_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify
+
+- name: verify release update apply on the grid infrastructure home
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ GI_ORACLE_HOME }}";echo "The below patch instaled on oracle home $ORACLE_HOME";$ORACLE_HOME/OPatch/opatch lspatches
+  register: gi_opatch_lsinv
+  ignore_errors: true
+  tags:
+    - ruverify
+
+- name: display grid infrastructure opatch lspatches log
+  debug:
+    var: gi_opatch_lsinv.stdout_lines
+  tags:
+    - ruverify

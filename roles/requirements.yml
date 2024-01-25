@@ -1,0 +1,9 @@
+---
+# - name: ansible-role_orapatch
+#   src: https://cscgithub.cscglobal.com/INFRA/ansible-role_orapatch
+#   # version: 1.0.2
+#   scm: git
+- name: oracle_patching_migr_tower_2_aap
+  src: https://cscgithub.cscglobal.com/INFRA/oracle_patching_migr_tower_2_aap
+  # version: 1.0.2
+  scm: git

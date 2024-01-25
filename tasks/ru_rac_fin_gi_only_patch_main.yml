@@ -1,0 +1,4 @@
+---
+- include_tasks: rac_svc_relocate_stop_instance.yml
+- include_tasks: fin_gi_switch_main.yml
+- include_tasks: oop_rac_start_inst_svc_relocate.yml

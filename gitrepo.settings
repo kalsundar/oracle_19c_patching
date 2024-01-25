@@ -1,0 +1,197 @@
+gitURLBase: "https://cscgithub.cscglobal.com"
+apiURLBase: "https://cscgithub.cscglobal.com/api/v3"
+organizationName: "INFRA"
+repository:
+  name: "ansible-orapatch"
+  description: "both GI and DB Patch"
+  private: false
+  has_issues: true
+  has_wiki: false
+  has_projects: false
+  allow_rebase_merge: false
+  allow_merge_commit: false
+  default_branch: develop
+labels:
+# Type
+  - name: type:bug
+    color: "d73a4a"
+  - name: type:duplicate
+    color: "d73a4a"
+  - name: type:invalid
+    color: "d73a4a"
+  - name: type:enhancement
+    color: "d73a4a"
+  - name: type:good_first_issue
+    color: "d73a4a"
+  - name: type:help_wanted
+    color: "d73a4a"
+  - name: type:security
+    color: "d73a4a"
+  - name: type:tech_debt
+    color: "d73a4a"
+  - name: type:documentation
+    color: "d73a4a"
+  - name: type:process_gap
+    color: "d73a4a"
+  - name: type:optimization
+    color: "d73a4a"
+  - name: type:new_feature
+    color: "d73a4a"
+  - name: type:refactoring
+    color: "d73a4a"
+  - name: type:maintenance
+    color: "d73a4a"
+  - name: type:question
+    color: "d73a4a"
+  - name: type:breaking_change
+    color: "d73a4a"
+# Environment
+  - name: env:production
+    color: "33cccc"
+  - name: env:integration_testing
+    color: "33cccc"
+  - name: env:performance_uat
+    color: "33cccc"
+  - name: env:disaster_recovery
+    color: "33cccc"
+  - name: env:multi_site
+    color: "33cccc"
+# Status
+  - name: status:in_progress
+    color: "ff9900"
+  - name: status:pending_whiteboard
+    color: "ff9900"
+  - name: status:pending_verification
+    color: "ff9900"
+  - name: status:on_hold
+    color: "ff9900"
+  - name: status:blocked
+    color: "ff9900"
+  - name: status:accepted
+    color: "ff9900"
+  - name: status:abandoned
+    color: "ff9900"
+  - name: status:cant_reproduce
+    color: "ff9900"
+  - name: status:help_wanted
+    color: "ff9900"
+  - name: status:wontfix
+    color: "ff9900"
+# Priorities
+  - name: priority:critical
+    color: "cfd3d7"
+  - name: priority:high
+    color: "cfd3d7"
+  - name: priority:medium
+    color: "cfd3d7"
+  - name: priority:low
+    color: "cfd3d7"
+ # Product-Lines
+  - name: product_ln:networking
+    color: "d4c5f9"
+  - name: product_ln:directory_svcs
+    color: "d4c5f9"
+  - name: product_ln:monitoring
+    color: "d4c5f9"
+  - name: product_ln:workload_auto
+    color: "d4c5f9"
+  - name: product_ln:self_service
+    color: "d4c5f9"
+  - name: product_ln:backup_dr
+    color: "d4c5f9"
+  - name: product_ln:operating_sys
+    color: "d4c5f9"
+  - name: product_ln:lb_api_gateway
+    color: "d4c5f9"
+  - name: product_ln:web_middleware
+    color: "d4c5f9"
+  - name: product_ln:messaging
+    color: "d4c5f9"
+  - name: product_ln:database
+    color: "d4c5f9"
+  - name: product_ln:sso_mfa
+    color: "d4c5f9"
+  - name: product_ln:cloud
+    color: "d4c5f9"
+  - name: product_ln:compute
+    color: "d4c5f9"
+  - name: product_ln:storage
+    color: "d4c5f9"
+  - name: product_ln:virtualization
+    color: "d4c5f9"
+  - name: product_ln:sec_compliance
+    color: "d4c5f9"
+  - name: product_ln:ci_cd
+    color: "d4c5f9"
+  - name: product_ln:container
+    color: "d4c5f9"
+collaborators:
+  - username: svcinfrabot
+    permission: push
+webhooks:
+  - name: web
+    config:
+      url: "https://outlook.office.com/webhook/1155eb7f-85ba-4f2f-a3d5-1f01e26ef8e4@66395830-4e70-4a10-8f30-225fe9afd23b/GitHubEnterprise/bce808c3e43d4fcdb9788af9872cbd5c/5676dfa4-aced-463f-ae08-bc4137e4830e"
+      content_type: json
+    events:
+      - push
+      - pull_request
+  - name: web
+    config:
+      url: "https://jenkins.cscglobal.com/github-webhook/"
+      content_type: json
+    events:
+      - push
+      - pull_request
+milestones:
+  - title: "0.1.0-alpha"
+    description: "tracking milestone for 0.1.0-alpha"
+branches:
+  - name: master
+    required_status_checks:
+      strict: true
+      contexts: []
+    enforce_admins: true
+    required_pull_request_reviews:
+      dismiss_stale_reviews: true
+      require_code_owner_reviews: true
+    restrictions: null
+  - name: develop
+    required_status_checks:
+      strict: true
+      contexts: []
+    enforce_admins: false
+    required_pull_request_reviews:
+      dismiss_stale_reviews: false
+      require_code_owner_reviews: false
+    restrictions: null
+teams:
+  - name: architecture
+    permission: admin
+  - name: unix
+    permission: admin
+  - name: wcs
+    permission: admin
+  - name: sr-leaders
+    permission: write
+  - name: networking
+    permission: write
+  - name: vsat
+    permission: write
+  - name: apptech
+    permission: write
+  - name: dba
+    permission: write
+  - name: is-operations
+    permission: write
+  - name: sharepoint
+    permission: write
+  - name: websystems
+    permission: write
+  - name: tools-and-monitoring
+    permission: write
+issues:
+  - title: "TODO Checklist for Stable Release"
+    body: "List of TODO items to complete before a release:\r\n- [ ] Test the chart using molecule locally\r\n- [ ] Ensure all Jenkins builds are successful\r\n- [ ] Update README.md with additional instructions on usage for this chart\r\n- [ ] Update .gitignore with any additional files as needed\r\n- [ ] Update this repository with latest and greatest codebase\r\n- [ ] update [ICAA sharepoint site](https://hub.cscinfo.com/teams/infrastructure/ito/itoteams/cloudautomation/SitePages/Home.aspx) to include new ansible role or playbook\r\n- [ ] Ensure that both master and develop branchs in remote repo are in sync"
+    milestone: 1
+    labels: ["status:in_progress"]

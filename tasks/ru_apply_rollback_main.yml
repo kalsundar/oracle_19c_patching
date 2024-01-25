@@ -1,0 +1,19 @@
+---
+- name: Verify database type to apply patch
+  ansible.builtin.shell:
+    cmd: cd {{ ORACLE_HOME }}/rdbms/lib;ar -t libknlopt.a | grep -c kcsm.o
+  register: db_type
+  failed_when: db_type.rc not in [ 0, 1 ]
+
+- name: list database type to apply patch
+  become_user: root
+  debug:
+    var: db_type.stdout
+
+# - include_tasks: ru_apply_prerequisites_main.yml
+#   when: db_type.stdout == "0"
+
+# - include_tasks: ru_rac_apply_prerequisites_main.yml
+#   when: db_type.stdout == "1"
+
+- include: "{{ 'ru_rac_apply_prerequisites_main.yml' if db_type.stdout.exists else 'ru_apply_prerequisites_main.yml' }}"

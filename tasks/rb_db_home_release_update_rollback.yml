@@ -1,0 +1,17 @@
+---
+- name: deinstall release update on the database home
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto rollback {{ patch_local_dir }}/{{ gi_patch_id }} -oh {{ ORACLE_HOME }}
+  register: db_opatch_rollback
+
+- name: display database home patch rollback log
+  become_user: root
+  debug:
+    var: db_opatch_rollback.stdout_lines
+
+- name: copy the database home patch rollback log to a file
+  become_user: root
+  copy:
+    content: "{{ db_opatch_rollback.stdout }}"
+    dest: "{{ rb_log_dir }}/db_opatch_rollback_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"

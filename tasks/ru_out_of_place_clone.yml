@@ -1,0 +1,46 @@
+---
+- name: clone the current database home and install release update
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -prepare-clone -oh {{ ORACLE_HOME }} -silent {{ script_loc }}/db_clone_{{ ansible_host}}.properties -force_conflict
+  register: db_oop_clone
+  tags:
+    - db_oop_clone
+
+- name: display database home clone session log
+  become_user: root
+  debug:
+    var: db_oop_clone.stdout_lines
+  tags:
+    - db_oop_clone
+
+- name: copy database home clone session log to a file
+  become_user: root
+  copy:
+    content: "{{ db_oop_clone.stdout }}"
+    dest: "{{ log_dir }}/db_oop_clone_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - db_oop_clone
+
+- name: clone the grid infrastructure home and install release update
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatchauto apply {{ patch_local_dir }}/{{ gi_patch_id }} -prepare-clone -oh {{ GI_ORACLE_HOME }} -silent {{ script_loc }}/gi_clone_{{ ansible_host}}.properties -force_conflict
+  register: gi_oop_clone
+  tags:
+    - gi_oop_clone
+
+- name: display grid infrastructure home clone session log
+  become_user: root
+  debug:
+    var: gi_oop_clone.stdout_lines
+  tags:
+    - gi_oop_clone
+
+- name: copy grid infrastructure home clone session log to a file
+  become_user: root
+  copy:
+    content: "{{ gi_oop_clone.stdout }}"
+    dest: "{{ log_dir }}/gi_oop_clone_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  tags:
+    - gi_oop_clone

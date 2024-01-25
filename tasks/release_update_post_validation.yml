@@ -1,0 +1,122 @@
+---
+- name: service running status on the current node
+  environment:
+    ORACLE_HOME: "{{ CL_ORACLE_HOME }}"
+    PATH: "{{ CL_ORACLE_HOME }}/bin:$PATH"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_svc_status_{{ ansible_host }}.sh"
+  register: db_svc_running
+  ignore_errors: true
+  tags:
+    - post_validation
+  failed_when: db_svc_running.rc not in [ 0, 1 ]
+
+# - name: display service running status on the current node
+#   debug:
+#     var: db_svc_running.stdout_lines
+#   tags:
+#     - post_validation
+
+- name: copy service running status on the current node to a file
+  copy:
+    content: "{{ db_svc_running.stdout }}"
+    dest: "{{ log_dir }}/svc_running_on_{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: compare service running status pre and post patch
+  environment:
+    PATH: "{{ CL_GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w svc_running_on_{{ ansible_host }}_postpatch.log svc_running_on_{{ ansible_host }}_prepatch.log
+  register: db_svc_diff
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display service running status pre and post patch
+  debug:
+    var: db_svc_diff.stdout_lines
+  tags:
+    - post_validation
+
+- name: execute SQL Statement to get database component status
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_comp_status.sh"
+  register: db_component_post_ru_status
+  ignore_errors: true
+  tags:
+    - post_validation
+
+# - name: display database component status output
+#   debug:
+#     var: db_component_post_ru_status.stdout_lines
+#   tags:
+#     - post_validation
+
+- name: copy the database component status output to a log file
+  copy:
+    content: "{{ db_component_post_ru_status.stdout }}"
+    dest: "{{ log_dir }}/db_component_status_{{ ansible_host }}_postpatch.log"
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: compare database component status pre and post patch
+  environment:
+    PATH: "{{ CL_GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w db_component_status_{{ ansible_host }}_postpatch.log db_component_status_{{ ansible_host }}_prepatch.log
+  register: db_comp_diff
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display database component status pre and post patch
+  debug:
+    var: db_comp_diff.stdout_lines
+  tags:
+    - post_validation
+
+- name: compare pdb open_mode status pre and post patch
+  environment:
+    PATH: "{{ CL_GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: cd "{{ log_dir }}";diff -w pdb_open_status_{{ ansible_host }}_postpatch.log pdb_open_status_{{ ansible_host }}_prepatch.log
+  register: db_open_diff
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display pdb open_mode status pre and post patch
+  debug:
+    var: db_open_diff.stdout_lines
+  tags:
+    - post_validation
+
+- name: verify the SQL patch apply status at database level
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_sql_patch_status.sh"
+  register: db_ru_apply_status
+  ignore_errors: true
+  tags:
+    - post_validation
+
+- name: display db release update status output
+  debug:
+    var: db_ru_apply_status.stdout_lines
+  tags:
+    - post_validation
+
+- name: copy the db release update status output to a log file
+  copy:
+    content: "{{ db_ru_apply_status.stdout }}"
+    dest: "{{ log_dir }}/db_ru_apply_status_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - post_validation

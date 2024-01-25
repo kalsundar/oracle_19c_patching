@@ -1,0 +1,8 @@
+use_default_rules: true
+verbosity: 1
+skip_list:
+  - ANSIBLE0012
+  - ANSIBLE0013
+
+# skipping ANSIBLE0012 and ANSIBLE0013 
+# as they are CMD and SHELL modules are required for weblogic

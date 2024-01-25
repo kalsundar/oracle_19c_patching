@@ -1,0 +1,89 @@
+---
+- name: service running status on the current instance
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/inst_svc_{{ ansible_host }}.sh"
+  register: rac_svc_running
+  ignore_errors: true
+  tags:
+    - pre_svc
+  failed_when: rac_svc_running.rc not in [ 0, 1 ]
+
+- name: display service running status on the current instance
+  debug:
+    var: rac_svc_running.stdout_lines
+  tags:
+    - pre_svc
+
+- name: copy service running status on the current instance to a file
+  copy:
+    content: "{{ rac_svc_running.stdout }}"
+    dest: "{{ log_dir }}/svc_running_inst_{{ ansible_host }}_prepatch.log"
+  ignore_errors: true
+  tags:
+    - pre_svc
+
+- name: service relocate to available instance
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/svc_relocate_{{ ansible_host }}_prepatch.sh"
+  register: rac_svc_relocate
+  ignore_errors: true
+  tags:
+    - pre_svc
+  failed_when: rac_svc_relocate.rc not in [ 0, 1 ]
+
+- name: display service relocate output from the current node
+  debug:
+    var: rac_svc_relocate.stdout_lines
+  tags:
+    - pre_svc
+
+- name: copy the service relocate output from the current node to a file
+  copy:
+    content: "{{ rac_svc_relocate.stdout }}"
+    dest: "{{ log_dir }}/svc_reloc_from_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true
+  tags:
+    - pre_svc
+
+- name: service status on the current node after relocate
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/svc_reloc_verify_{{ ansible_host }}_prepatch.sh"
+  register: rac_svc_status
+  ignore_errors: true
+  tags:
+    - pre_svc
+  failed_when: rac_svc_status.rc not in [ 0, 1 ]
+
+- name: display service status on the current node
+  debug:
+    var: rac_svc_status.stdout_lines
+  tags:
+    - pre_svc
+
+- name: Confirm to stop instance on the current node
+  ansible.builtin.pause:
+    seconds: 60
+  tags:
+    - pre_svc
+
+- name: stop instance on the current node
+  environment:
+    PATH: "{{ GI_ORACLE_HOME }}/bin:$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/inst_stop_{{ ansible_host }}_prepatch.sh"
+  register: stop_inst
+  tags:
+    - inststop
+  failed_when: stop_inst.rc not in [ 0, 1 ]
+
+- name: display instance stop output from the current node
+  debug:
+    var: stop_inst.stdout_lines
+  tags:
+    - inststop

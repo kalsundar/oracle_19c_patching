@@ -1,0 +1,18 @@
+---
+- name: Execute SQL Statement to get db component status
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ rac_script }}/pdb_open_status.sh"
+  register: db_component_status
+  ignore_errors: true
+
+- name: display db component status output
+  debug:
+    var: db_component_status.stdout_lines
+
+- name: copy the db component status output to a log file
+  copy:
+    content: "{{ db_component_status.stdout }}"
+    dest: "{{ log_dir }}/db_comp_status_{{ ansible_host }}_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}"
+  ignore_errors: true

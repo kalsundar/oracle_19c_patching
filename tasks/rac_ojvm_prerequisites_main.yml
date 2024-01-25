@@ -1,0 +1,3 @@
+# complete prerequisites to install or rollback release update and ojvm patch
+- include_tasks: ru_rac_prerequisites_main.yml
+- include_tasks: rac_ojvm_prerequisites.yml

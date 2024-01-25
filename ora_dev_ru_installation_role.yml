@@ -1,0 +1,10 @@
+---
+- name: oracle development database release update installation role playbook
+  hosts: ora_dev1:ora_dev2
+  become_method: sudo
+  become_user: oracle
+  become: true
+
+  roles:
+    - role: ora_dev_ru_installation_role
+      system_manager: test

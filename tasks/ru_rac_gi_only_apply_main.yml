@@ -1,0 +1,7 @@
+---
+# The below list of tasks to relocate service, stop instance, apply database and grid home release update
+# and start instance, relocate services back to preffered node
+- include_tasks: rac_svc_relocate_stop_instance.yml
+- include_tasks: gi_home_release_update_apply.yml
+- include_tasks: rac_verify_opatch_apply_status.yml
+- include_tasks: rac_start_inst_svc_relocate.yml

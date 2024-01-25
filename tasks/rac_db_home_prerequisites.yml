@@ -1,0 +1,71 @@
+---
+- name: create local directory to copy release update files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+
+- name: create temporary directory to create temp files during the patch process
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}/tmp"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0777
+
+- name: Upgrade OPatch Utility
+  ansible.builtin.shell:
+    cmd: mv {{ ORACLE_HOME }}/OPatch {{ ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip
+  ignore_errors: true
+
+- name: Verify OPatch Utility Version
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME }}";$ORACLE_HOME/OPatch/opatch version
+  register: db_home_opatch_version
+
+- name: display database home OPatch Utility Version
+  debug:
+    var: db_home_opatch_version.stdout_lines
+
+- name: Upgrade OPatch Utility on db home 2
+  ansible.builtin.shell:
+    cmd: mv {{ ORACLE_HOME_2 }}/OPatch {{ ORACLE_HOME_2 }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{ORACLE_HOME_2 }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip
+  ignore_errors: true
+
+- name: Verify OPatch Utility Version
+  ansible.builtin.shell:
+    cmd: export ORACLE_HOME="{{ ORACLE_HOME_2 }}";$ORACLE_HOME/OPatch/opatch version
+  register: db2_home_opatch_version
+
+- name: display database home OPatch Utility Version
+  debug:
+    var: db2_home_opatch_version.stdout_lines
+
+- name: copy release update to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ gi_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+
+- name: Verify database home patch conflict
+  ansible.builtin.shell:
+    cmd: cd {{ patch_local_dir }}/{{ gi_patch_id }}/{{ db_patch_id }};export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME }}";export PATH={{ ORACLE_HOME }}/OPatch:/usr/ccs/bin:$PATH;opatch prereq CheckConflictAgainstOHWithDetail -ph .
+  register: db_home_conflict_status
+
+- name: display database home patch conflict output
+  debug:
+    var: db_home_conflict_status.stdout_lines
+
+- name: Verify database home 2 patch conflict
+  ansible.builtin.shell:
+    cmd: cd {{ patch_local_dir }}/{{ gi_patch_id }}/{{ db_patch_id }};export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ ORACLE_HOME_2 }}";export PATH={{ ORACLE_HOME_2 }}/OPatch:/usr/ccs/bin:$PATH;opatch prereq CheckConflictAgainstOHWithDetail -ph .
+  register: db2_home_conflict_status
+
+- name: display database home 2 patch conflict output
+  debug:
+    var: db2_home_conflict_status.stdout_lines

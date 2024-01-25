@@ -1,0 +1,5 @@
+---
+# The below list of tasks to stop instance, apply database and grid home release update
+# and start instance, start MRP to apply archive logs
+
+- include_tasks: ru_dr_gi_db_release_update_apply.yml

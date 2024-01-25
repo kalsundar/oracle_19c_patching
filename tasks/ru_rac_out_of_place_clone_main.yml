@@ -1,0 +1,3 @@
+---
+- include_tasks: ru_rac_out_of_place_clone.yml
+- include_tasks: rac_oop_ojvm_apply.yml

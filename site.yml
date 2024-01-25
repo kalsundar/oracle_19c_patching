@@ -1,0 +1,13 @@
+---
+- hosts: "{{ host_group }}"
+  order: sorted
+  become_method: sudo
+  become: true
+  become_user: oracle
+  roles:
+    # - ansible-role_orapatch
+    - oracle_patching_migr_tower_2_aap
+  
+  # - hosts: loclhost
+  # roles:
+  #   - ansible-role_orapatch

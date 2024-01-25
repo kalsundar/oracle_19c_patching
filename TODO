@@ -1,0 +1,8 @@
+# list of TODO items for ansible-orapatch
+
+TODO:
+    ☐ Review Issue #1 in new repository for list of TODO items
+    ☐ Add Tags to each ansible role required
+    ☐ Add Version info to roles/requirements.yml
+
+FIXME: 

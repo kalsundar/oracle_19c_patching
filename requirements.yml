@@ -1,0 +1,13 @@
+---
+# Place Dependent Roles here
+# - name: ansible-role_orapatch
+#   src: https://cscgithub.cscglobal.com/INFRA/ansible-role_orapatch
+#   # version: 1.0.2
+#   scm: git
+collections:
+  - name: awx.awx
+  - name: redhat_cop.controller_configuration
+  - name: ansible.posix
+  # - name: https://cscgithub.cscglobal.com/INFRA/ansible-role_orapatch.git
+  #   type: git
+...

@@ -1,0 +1,205 @@
+---
+# the below list of tasks to complete patch conflict check, backup current grid and database home
+# verify the pdb open mode and database component status
+
+- name: remove local directory to cleanup older patch files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: absent
+  tags:
+    - rm_dir
+
+- name: create local directory to copy release update files
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0775
+  tags:
+    - dir_create
+
+- name: create temporary directory to create temp files during the patch process
+  ansible.builtin.file:
+    path: "{{ patch_local_dir }}/tmp"
+    state: directory
+    owner: oracle
+    group: dba
+    mode: 0777
+  tags:
+    - dir_create
+
+- name: upgrade OPatch utility on database home
+  ansible.builtin.shell:
+    cmd: mv {{ FIN_ORACLE_HOME }}/OPatch {{ FIN_ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{FIN_ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: upgrade grid infrastructure home OPatch utility
+  become_user: root
+  ansible.builtin.shell:
+    cmd: mv {{ GI_ORACLE_HOME }}/OPatch {{ GI_ORACLE_HOME }}/OPatch_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}; unzip -d {{GI_ORACLE_HOME }} {{ patch_dir }}/p6880880_122010_Linux-x86-64.zip; chown -R oracle:dba {{ GI_ORACLE_HOME }}/OPatch
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: Verify grid infrastructure OPatch utility version
+  ansible.builtin.shell:
+    cmd: "{{ GI_ORACLE_HOME }}/OPatch/opatch version"
+  register: gi_opatch_version
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: display grid infrastructure OPatch utility version
+  debug:
+    var: gi_opatch_version.stdout_lines
+  tags:
+    - opatch_upgrade
+
+- name: Verify database home OPatch utility version
+  ansible.builtin.shell:
+    cmd: "{{ FIN_ORACLE_HOME }}/OPatch/opatch version"
+  register: db_opatch_version
+  ignore_errors: true
+  tags:
+    - opatch_upgrade
+
+- name: display database home OPatch utility version
+  debug:
+    var: db_opatch_version.stdout_lines
+  tags:
+    - opatch_upgrade
+
+- name: copy release update to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ gi_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+  tags:
+    - file_copy
+
+- name: verify grid infrastructure and database home patch conflict
+  become_user: root
+  ansible.builtin.shell:
+    cmd: export TEMP="{{patch_temp_dir}}";export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ GI_ORACLE_HOME }}";export PATH=$ORACLE_HOME/OPatch:/usr/ccs/bin:$PATH;opatchauto apply {{ patch_local_dir }}/{{gi_patch_id}} -oh {{GI_ORACLE_HOME}},{{ FIN_ORACLE_HOME }} -analyze
+  register: patch_conflict_status
+  tags:
+    - patch_conflict
+
+- name: display grid infrastructure and database home patch conflict output
+  become_user: root
+  debug:
+    var: patch_conflict_status.stdout_lines
+  tags:
+    - patch_conflict
+
+- name: backup grid infrastructure home
+  become_user: root
+  community.general.archive:
+    path: "{{ GI_ORACLE_HOME }}"
+    dest: "{{ patch_dir }}/orahomebackup/{{ ansible_hostname }}_{{ current_version }}_gi_{{ lookup('pipe', 'date +%m%d-%H%M') }}.tar.gz"
+    format: gz
+  tags:
+    - gi_db_files_bkp
+
+- name: backup finance database home
+  become_user: root
+  community.general.archive:
+    path: "{{ FIN_ORACLE_HOME }}"
+    dest: "{{ patch_dir }}/orahomebackup/{{ ansible_hostname }}_{{ current_version }}_fin_db_1_{{ lookup('pipe', 'date +%m%d-%H%M') }}.tar.gz"
+    format: gz
+  tags:
+    - gi_db_files_bkp
+
+- name: checking backup files from the backup location
+  become_user: root
+  ansible.builtin.shell:
+    cmd: ls -lrth {{patch_dir}}/orahomebackup/{{ ansible_hostname }}_*
+  register: list_backup_file
+  ignore_errors: true
+  tags:
+    - gi_db_files_bkp
+
+- name: list backup files from the backup location
+  become_user: root
+  debug:
+    var: list_backup_file.stdout_lines
+  tags:
+    - gi_db_files_bkp
+
+- name: copy OJVM patch to the local patch directory
+  ansible.builtin.copy:
+    src: "{{ patch_dir }}/{{ ojvm_patch_id }}"
+    dest: "{{ patch_local_dir }}"
+    remote_src: yes
+    force: yes
+    owner: oracle
+    group: dba
+  tags:
+    - file_copy
+
+- name: Verify OJVM patch conflict against finance database home
+  ansible.builtin.shell:
+    cmd: cd {{ patch_local_dir }}/{{ ojvm_patch_id }};export TMPDIR="{{patch_temp_dir}}";export ORACLE_HOME="{{ FIN_ORACLE_HOME }}";export PATH={{ FIN_ORACLE_HOME }}/OPatch:/usr/ccs/bin:$PATH;opatch prereq CheckConflictAgainstOHWithDetail -ph .
+  register: db_home_conflict_status
+  tags:
+    - patch_conflict
+
+- name: display OJVM patch conflict output against finance database home
+  debug:
+    var: db_home_conflict_status.stdout_lines
+  tags:
+    - patch_conflict
+
+- name: execute SQL statement to get pdb open_mode status
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/pdb_open_status.sh"
+  register: db_component_status
+  ignore_errors: true
+  tags:
+    - db_comp_status
+
+- name: display pdb open_mode status output
+  debug:
+    var: db_component_status.stdout_lines
+  tags:
+    - db_comp_status
+
+- name: copy the pdb open_mode status output to a log file
+  copy:
+    content: "{{ db_component_status.stdout }}"
+    dest: "{{ log_dir }}/pdb_open_status_{{ ansible_host }}_precheck.log"
+  ignore_errors: true
+  tags:
+    - db_comp_status
+
+- name: execute SQL Statement to get database component status
+  environment:
+    PATH: "$PATH:/usr/bin"
+  ansible.builtin.shell:
+    cmd: "{{ script_loc }}/db_comp_status.sh"
+  register: db_component_status
+  ignore_errors: true
+  tags:
+    - db_comp_status
+
+- name: display database component status output
+  debug:
+    var: db_component_status.stdout_lines
+  tags:
+    - db_comp_status
+
+- name: copy the database component status output to a log file
+  copy:
+    content: "{{ db_component_status.stdout }}"
+    dest: "{{ log_dir }}/db_component_status_{{ ansible_host }}_prepatch.log"
+  ignore_errors: true
+  tags:
+    - db_comp_status

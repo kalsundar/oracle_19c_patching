@@ -1,0 +1,19 @@
+# variables to apply oracle release update 19.16 to apply on the current 19.11 relase update.
+log_dir: "/orautl/SOFTWARE/19cSoftware/19.16.PatchSet/ru_apply_log"
+rb_log_dir: "/orautl/SOFTWARE/19cSoftware/19.16.PatchSet/ru_rollback_log"
+patch_dir: "/orautl/SOFTWARE/19cSoftware/19.16.PatchSet"
+patch_local_dir: "/opt/app/oracle/patches"
+patch_temp_dir: "{{patch_dir}}/tmp"
+current_version: 1911
+host_group: uat_sb1
+# host_group: ora_sand1
+gi_patch_id: 34130714
+db_patch_id: 34133642
+patch_id_1: 33575402
+patch_id_2: 34133642
+patch_id_3: 34139601
+patch_id_4: 34160635
+patch_id_5: 34318175
+rac_script: "{{patch_dir}}/scripts"
+db_name: "{{ ORACLE_SID }}"
+oracle_home_2: "{{ ORACLE_HOME}}"
